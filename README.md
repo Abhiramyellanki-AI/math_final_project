@@ -2,7 +2,7 @@
 
 **HOSVD + SVM vs. Random Kitchen Sinks (RKS) + Linear SVM with Intra-Trial Observable Markov Chains**
 
-> **Status:** All Milestones **M0 – M6 Complete**. Full experimental report and Viva Defense Q&A available in [REPORT_AND_VIVA_GUIDE.md](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/REPORT_AND_VIVA_GUIDE.md).
+> **Status:** Single-Subject Pilot (`M0 – M6`) Complete & Preserved; Confirmatory Multi-Participant Cohort Expansion (**Option A**, Stages `E1 – E3`: `105` Eligible Participants, `315` Recordings, `4,723` Trials) Complete. Full pilot + cohort comparison report and Viva Q&A available in [REPORT_AND_VIVA_GUIDE.md](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/REPORT_AND_VIVA_GUIDE.md).
 
 ---
 
@@ -109,9 +109,56 @@ python -m eeg_p3.cli run-markov --config configs/subject01.yaml
 # M5: Lock best configs from Runs 4 & 8, refit on Runs 4+8, evaluate once on held-out Run 12
 python -m eeg_p3.cli evaluate-locked --config configs/subject01.yaml
 
-# M6: Generate all publication-grade comparison figures and report manifest
+# M6: Generate all publication-grade comparison figures and report manifest (requires M5 output)
 python -m eeg_p3.cli build-report --config configs/subject01.yaml
 
-# Run Full Automated Test Suite (31 tests)
+# E1 (Stage 1 Cohort Expansion): Discover local dataset (Subjects 2-109, excluding pilot Subject 1),
+# audit eligibility/exclusions, and export reproducible split manifest (no model training or test eval)
+python -m eeg_p3.cli audit-cohort --config configs/cohort_expanded.yaml
+
+# E2 (Stage 2 Cohort Expansion): Run multi-participant development validation on Runs 4 and 8 across
+# all 105 eligible participants (pooled & participant-grouped metrics, 95% CIs, seed variability; Run 12 untouched)
+python -m eeg_p3.cli validate-cohort --config configs/cohort_expanded.yaml
+
+# E3 (Stage 3 Cohort Expansion): Explicitly lock best configs from E2 (Runs 4 & 8), refit on combined
+# Runs 4+8 (3,148 trials across 105 participants), evaluate ONCE on held-out Run 12 (1,575 trials),
+# and generate cohort publication figures
+python -m eeg_p3.cli evaluate-locked --config configs/cohort_expanded.yaml
+python -m eeg_p3.cli build-report --config configs/cohort_expanded.yaml
+
+# Run Full Automated Test Suite (39 unit & integration tests)
 python -m pytest -v
 ```
+
+---
+
+## 6. Confirmatory Multi-Participant Cohort Expansion (Option A — Stages `E1 – E3`)
+
+To evaluate generalization to new recordings of known participants (**Option A**) without reusing pilot Subject 1 (whose Run 12 was already inspected in the pilot):
+- **Configuration:** [configs/cohort_expanded.yaml](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/configs/cohort_expanded.yaml) points to `C:/Users/Abhiram/Downloads/eegmmidb-1.0.0/files` with `allow_download_fallback: false`, `candidate_subject_range: [2, 109]`, and `excluded_subject_ids: [1]`.
+- **Pre-Evaluation Eligibility Audit (`audit-cohort`):** Out of `109` total subjects (`1` excluded pilot + `108` candidates `2..109`):
+  - **`105` Eligible Participants:** All subjects in `2..109` except `88, 92, 100`.
+  - **`4` Excluded Participants (Logged Before Model Evaluation):**
+    1. `Subject 1 (S001)`: `excluded_pilot_subject` (Run 12 already inspected in single-subject pilot).
+    2. `Subject 88 (S088)`: `sfreq_mismatch` (`128.0 Hz` instead of required `160.0 Hz`).
+    3. `Subject 92 (S092)`: `sfreq_mismatch` (`128.0 Hz` instead of required `160.0 Hz`).
+    4. `Subject 100 (S100)`: `sfreq_mismatch` (`128.0 Hz` instead of required `160.0 Hz`).
+- **Cohort Trial & Class Counts (`315` recordings, `4,723` total trials):**
+  - **Development (`Runs 4 + 8`, `210` recordings):** **`3,148` trials** (`1,589` Left `T1=0`, `1,559` Right `T2=1`).
+    - Fold 1: Train `Run 4` (`105` recordings, `1,575` trials: `801` Left, `774` Right) $\rightarrow$ Validate `Run 8` (`105` recordings, `1,573` trials: `788` Left, `785` Right).
+    - Fold 2: Train `Run 8` (`1,573` trials) $\rightarrow$ Validate `Run 4` (`1,575` trials).
+  - **Held-Out Final Test (`Run 12`, `105` recordings):** **`1,575` trials** (`794` Left `T1=0`, `781` Right `T2=1`).
+
+### Confirmatory Cohort Locked Final Test Results (`N = 105` Participants, Train Runs 4+8 = `3,148` Trials, Held-Out Test Run 12 = `1,575` Trials)
+
+| Model Family | Locked Config (from Runs 4↔8 CV) | Dev CV Pooled Acc (±2-Fold SD) | **Test Run 12 Pooled Acc** | **Test Balanced Acc** | **Test Macro F1** | **Test Participant Mean Acc (95% CI, $N=105$)** | Features ($p$) | Compression vs. Raw | **SVM Train Time (ms)** | **SVM Predict Batch Time (ms)** | **Deployed Storage (Bytes)** |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **1. BaselineLinearSVC** | `LinearSVC_C=0.1` | `57.02% ± 0.12%` | **`57.84%`** | `57.85%` | `0.5784` | **`57.84%`** (`[55.22%, 60.46%]`) | `128` | `160.0x` | `147.78` | `1.63` | `4,104` |
+| **2. Baseline RBF SVC** | `RBF_SVC_C=10_gamma=scale` | `55.59% ± 0.04%` | **`58.16%`** | **`58.12%`** | **`0.5803`** | **`58.16%`** (`[55.38%, 60.94%]`) | `128` | `160.0x` | `847.75` | `716.12` | `2,907,128` |
+| **3. HOSVD + LinearSVC** | `HOSVD_rc=8_rt=10_C=0.1` | `50.54% ± 1.78%` | **`47.94%`** | `47.92%` | `0.4790` | **`47.94%`** (`[45.50%, 50.38%]`) | `80` | `256.0x` | `34.68` | `1.48` (`0.016 ms/trial` total) | `32,264` |
+| **4. RKS + LinearSVC** | `RKS_D=256_gamma=0.001_C=10` | **`57.56% ± 0.10%`** | **`57.59%`** | `57.58%` | `0.5758` | **`57.59%`** (`[54.86%, 60.32%]`) | `256` | `80.0x` (`2.0x` vs BP) | `365.83` | **`0.82` (`870x` faster than RBF)** | `269,320` |
+| **5. Standalone Markov** | `Markov_K=3_C=0.1` | `50.76% ± 0.09%` | **`50.79%`** | `50.83%` | `0.5070` | **`50.79%`** (`[48.53%, 53.05%]`) | **`15`** | **`1,365.3x`** | **`10.49`** | **`0.62`** | **`2,888`** |
+| **6. HOSVD + Markov** | `HOSVD(16,40)+Markov(K=6), C=0.1` | `48.79% ± 0.29%` | **`48.19%`** | `48.18%` | `0.4818` | **`48.19%`** (`[45.86%, 50.52%]`) | `685` | `29.90x` | `1,464.43` | `8.83` | `135,496` |
+| **7. RKS + Markov** | `RKS(256,0.01)+Markov(K=4), C=0.1` | `55.21% ± 0.29%` | **`57.08%`** | `57.05%` | `0.5701` | **`57.08%`** (`[54.54%, 59.62%]`) | `279` | `73.41x` | `736.91` | `3.58` | `278,760` |
+
+See [REPORT_AND_VIVA_GUIDE.md](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/REPORT_AND_VIVA_GUIDE.md) and [outputs/cohort_expanded/metrics/m5_locked_test_report.json](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/outputs/cohort_expanded/metrics/m5_locked_test_report.json) for full per-participant distributions, confusion matrices, HOSVD exploratory rank curves, and predetermined multi-seed RKS variability.

@@ -111,9 +111,15 @@ Measure the 8 required faculty evaluation metrics: **classification accuracy**, 
 ### 5.7 Comparability and limitations
 - All models share the same labels, recording splits, evaluation metrics, and tracked machine/runtime environment.
 - Baseline/RKS use bandpower; HOSVD may use raw epochs. Call this a **pipeline comparison**, not a controlled isolated comparison of mathematical transformations. For stronger claims, optionally add matched-input ablations.
-- Fixed train/test split is within-subject, across runs, **not across subjects**.
+- Fixed train/test split is within-subject, across runs, **not across subjects** (or Option A across multiple known participants: train on Runs 4 and 8 of eligible participants, test on Run 12 of those same eligible participants).
 - Compare preprocessing/representation time and classifier-fit time **separately** and as end-to-end totals.
 - Repeated stochastic seeds only where relevant; report variability if rerunning.
+
+### 5.8 Confirmatory Multi-Participant Cohort Amendment (Option A)
+- **Pilot Preservation:** Preserve `configs/subject01.yaml` and Subject 1 results as the original single-subject pilot experiment. Because Subject 1's Run 12 has already been inspected, exclude Subject 1 from the confirmatory cohort by default.
+- **Candidate Cohort & Task Purity:** Consider pre-downloaded subjects `2–109` from `local_data_dir` (`allow_download_fallback: false`). Use only left-vs-right imagined fist movement runs (`Runs 4 and 8` for development, `Run 12` for final held-out testing; `T1 -> 0`, `T2 -> 1`, exclude `T0`). Never mix executed movement runs or fists-vs-feet imagery runs.
+- **Pre-Evaluation Eligibility Audit:** Before any model evaluation, verify for each candidate subject across Runs 4, 8, and 12: file existence, MNE readability, 64 EEG channels in canonical standardized order, `160.0 Hz` sampling rate, valid `{T0, T1, T2}` annotations with both classes present, and valid `[0.5, 2.5)` s (`320`-sample) finite epochs. Log every exclusion with its objective quality reason; never exclude participants based on classifier accuracy.
+- **Unique Provenance & Splits:** Preserve `subject_id`, `run_id`, `recording_id` (`S{sid:03d}R{rid:02d}`), `global_trial_id`, and chronological cue order for every trial. Use the same eligible participants in development (`Runs 4, 8`) and final test (`Run 12`), with development Fold 1 (`Train Run 4 -> Val Run 8` across participants) and Fold 2 (`Train Run 8 -> Val Run 4` across participants). Export a reproducible cohort manifest.
 
 ## 6. Acceptance criteria
 1. One command prepares Subject 1 / runs 4, 8, 12 and prints data shapes, class counts, and channel/sample metadata.

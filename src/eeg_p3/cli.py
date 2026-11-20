@@ -173,7 +173,7 @@ def build_parser() -> argparse.ArgumentParser:
     # M5 command: evaluate-locked
     locked_parser = subparsers.add_parser(
         "evaluate-locked",
-        help="Lock best configs from Runs 4/8 CV, refit on Runs 4+8, evaluate once on held-out Run 12 (M5).",
+        help="Lock best configs from Runs 4/8 CV, refit on Runs 4+8, evaluate once on held-out Run 12 (M5/E3).",
     )
     locked_parser.add_argument(
         "--config",
@@ -184,14 +184,14 @@ def build_parser() -> argparse.ArgumentParser:
     locked_parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("outputs/metrics"),
-        help="Directory to export M5 locked test CSV and JSON metrics.",
+        default=None,
+        help="Directory to export M5/E3 locked test CSV and JSON metrics.",
     )
 
     # M6 command: build-report
     report_parser = subparsers.add_parser(
         "build-report",
-        help="Generate publication-style figures and research report manifest from M5 outputs (M6).",
+        help="Generate publication-style figures and research report manifest from M5/E3 outputs (M6).",
     )
     report_parser.add_argument(
         "--config",
@@ -202,14 +202,50 @@ def build_parser() -> argparse.ArgumentParser:
     report_parser.add_argument(
         "--metrics-dir",
         type=Path,
-        default=Path("outputs/metrics"),
-        help="Directory containing M4/M5 JSON and CSV outputs.",
+        default=None,
+        help="Directory containing M4/M5 or E2/E3 JSON and CSV outputs.",
     )
     report_parser.add_argument(
         "--figures-dir",
         type=Path,
-        default=Path("outputs/figures"),
+        default=None,
         help="Directory to save generated M6 publication figures.",
+    )
+
+    # E1 command: audit-cohort
+    audit_parser = subparsers.add_parser(
+        "audit-cohort",
+        help="Audit local dataset eligibility across candidate subjects and export split manifest (E1).",
+    )
+    audit_parser.add_argument(
+        "--config",
+        type=Path,
+        default=Path("configs/cohort_expanded.yaml"),
+        help="Path to cohort configuration YAML file (default: configs/cohort_expanded.yaml).",
+    )
+    audit_parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Directory to save cohort_manifest.json and cohort_eligibility.csv.",
+    )
+
+    # E2 command: validate-cohort
+    val_cohort_parser = subparsers.add_parser(
+        "validate-cohort",
+        help="Run multi-participant development validation on Runs 4 and 8 across all model families (E2).",
+    )
+    val_cohort_parser.add_argument(
+        "--config",
+        type=Path,
+        default=Path("configs/cohort_expanded.yaml"),
+        help="Path to cohort configuration YAML file (default: configs/cohort_expanded.yaml).",
+    )
+    val_cohort_parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Directory to save E2 development validation CSV and JSON reports.",
     )
 
     return parser
@@ -225,6 +261,9 @@ def run_info(config_path: Path) -> int:
         "project_name": cfg.project_name,
         "random_seed": cfg.random_seed,
         "subject_id": cfg.data.subject_id,
+        "is_multi_subject": cfg.data.is_multi_subject,
+        "candidate_subject_ids_count": len(cfg.data.candidate_subject_ids),
+        "excluded_subject_ids": list(cfg.data.excluded_subject_ids),
         "development_runs": list(cfg.data.development_runs),
         "held_out_test_run": cfg.data.held_out_test_run,
         "local_data_dir": str(cfg.data.local_data_dir),
@@ -459,12 +498,26 @@ def run_markov(config_path: Path, output_dir: Path) -> int:
     return 0
 
 
-def run_evaluate_locked(config_path: Path, output_dir: Path) -> int:
-    """Execute the M5 'evaluate-locked' subcommand: lock on Runs 4/8, refit on 4+8, test Run 12 once."""
+def run_evaluate_locked(config_path: Path, output_dir: Path | None) -> int:
+    """Execute the M5/E3 'evaluate-locked' subcommand: lock on Runs 4/8, refit on 4+8, test Run 12 once."""
+    import pandas as pd
     from eeg_p3.data import prepare_subject_dataset
     from eeg_p3.evaluation import run_m5_locked_evaluation
 
     cfg = load_config(config_path)
+    resolved_out_dir = (
+        output_dir
+        if output_dir is not None
+        else Path(cfg.raw.get("outputs", {}).get("metrics_dir", "outputs/metrics"))
+    )
+    resolved_out_dir.mkdir(parents=True, exist_ok=True)
+
+    precomputed_e2: dict | None = None
+    e2_json_path = resolved_out_dir / "e2_cohort_dev_report.json"
+    if cfg.data.is_multi_subject and e2_json_path.is_file():
+        with e2_json_path.open("r", encoding="utf-8") as handle:
+            precomputed_e2 = json.load(handle)
+
     dataset = prepare_subject_dataset(cfg)
     dep_versions = {
         "python": platform.python_version(),
@@ -475,31 +528,40 @@ def run_evaluate_locked(config_path: Path, output_dir: Path) -> int:
         dataset=dataset,
         cfg=cfg,
         dependency_versions=dep_versions,
+        precomputed_e2_report=precomputed_e2,
     )
 
-    output_dir.mkdir(parents=True, exist_ok=True)
-    locked_csv = output_dir / "m5_locked_test_results.csv"
-    rank_csv = output_dir / "m5_hosvd_test_rank_curve.csv"
-    report_json = output_dir / "m5_locked_test_report.json"
+    locked_csv = resolved_out_dir / "m5_locked_test_results.csv"
+    rank_csv = resolved_out_dir / "m5_hosvd_test_rank_curve.csv"
+    participant_test_csv = resolved_out_dir / "m5_per_participant_test_results.csv"
+    report_json = resolved_out_dir / "m5_locked_test_report.json"
 
     locked_df.to_csv(locked_csv, index=False)
     rank_curve_df.to_csv(rank_csv, index=False)
+    if report_dict.get("per_participant_test_results"):
+        pd.DataFrame(report_dict["per_participant_test_results"]).to_csv(
+            participant_test_csv, index=False
+        )
     with report_json.open("w", encoding="utf-8") as handle:
         json.dump(report_dict, handle, indent=2)
 
     output_payload = {
         "milestone": report_dict["milestone"],
+        "experiment_mode": report_dict.get("experiment_mode", "single_subject_pilot"),
         "subject_id": report_dict["subject_id"],
+        "n_eligible_participants": report_dict.get("n_eligible_participants", 1),
         "random_seed": report_dict["random_seed"],
         "development_runs_refit": report_dict["development_runs_refit"],
         "held_out_test_run_evaluated_once": report_dict["held_out_test_run_evaluated_once"],
         "class_balance": report_dict["class_balance"],
+        "rks_predetermined_seed_variability": report_dict.get("rks_predetermined_seed_variability"),
         "software_versions": report_dict["software_versions"],
         "methodological_disclosures_and_limitations": report_dict[
             "methodological_disclosures_and_limitations"
         ],
         "exported_files": {
             "locked_test_csv": str(locked_csv),
+            "per_participant_test_csv": str(participant_test_csv),
             "hosvd_test_rank_curve_csv": str(rank_csv),
             "locked_test_report_json": str(report_json),
         },
@@ -509,8 +571,13 @@ def run_evaluate_locked(config_path: Path, output_dir: Path) -> int:
     return 0
 
 
-def run_build_report(config_path: Path, metrics_dir: Path, figures_dir: Path) -> int:
-    """Execute the M6 'build-report' subcommand using actual M4/M5 measured outputs."""
+def run_build_report(
+    config_path: Path,
+    metrics_dir: Path | None,
+    figures_dir: Path | None,
+) -> int:
+    """Execute the M6 'build-report' subcommand using actual M4/M5 or E2/E3 measured outputs."""
+    import pandas as pd
     from eeg_p3.plotting import (
         plot_m6_confusion_matrices,
         plot_m6_hosvd_rank_curves,
@@ -519,47 +586,76 @@ def run_build_report(config_path: Path, metrics_dir: Path, figures_dir: Path) ->
         plot_m6_rks_sweep,
     )
 
-    _ = load_config(config_path)
-    m5_json_path = metrics_dir / "m5_locked_test_report.json"
-    m4_json_path = metrics_dir / "m4_rks_report.json"
+    cfg = load_config(config_path)
+    resolved_metrics_dir = (
+        metrics_dir
+        if metrics_dir is not None
+        else Path(cfg.raw.get("outputs", {}).get("metrics_dir", "outputs/metrics"))
+    )
+    resolved_figures_dir = (
+        figures_dir
+        if figures_dir is not None
+        else Path(cfg.raw.get("outputs", {}).get("figures_dir", "outputs/figures"))
+    )
+
+    m5_json_path = resolved_metrics_dir / "m5_locked_test_report.json"
+    m4_json_path = resolved_metrics_dir / "m4_rks_report.json"
+    e2_summary_csv = resolved_metrics_dir / "e2_cohort_dev_summary.csv"
 
     if not m5_json_path.is_file():
-        run_evaluate_locked(config_path, metrics_dir)
-    if not m4_json_path.is_file():
-        run_rks(config_path, metrics_dir)
+        raise FileNotFoundError(
+            f"Final test report '{m5_json_path}' not found. "
+            "Run 'evaluate-locked' explicitly first; 'build-report' never silently triggers final-test evaluation."
+        )
 
     with m5_json_path.open("r", encoding="utf-8") as handle:
         m5_report = json.load(handle)
-    with m4_json_path.open("r", encoding="utf-8") as handle:
-        m4_report = json.load(handle)
 
-    figures_dir.mkdir(parents=True, exist_ok=True)
+    rks_summary_records: list[dict]
+    source_rks_path: str
+    if m4_json_path.is_file():
+        with m4_json_path.open("r", encoding="utf-8") as handle:
+            m4_report = json.load(handle)
+        rks_summary_records = m4_report["summary_table"]
+        source_rks_path = str(m4_json_path)
+    elif e2_summary_csv.is_file():
+        e2_df = pd.read_csv(e2_summary_csv)
+        rks_df = e2_df[e2_df["model_family"] == "rks_linear_svc"]
+        rks_summary_records = rks_df.to_dict(orient="records")
+        source_rks_path = str(e2_summary_csv)
+    else:
+        raise FileNotFoundError(
+            f"Neither '{m4_json_path}' nor '{e2_summary_csv}' found. "
+            "Run 'run-rks' or 'validate-cohort' first."
+        )
+
+    resolved_figures_dir.mkdir(parents=True, exist_ok=True)
 
     fig_hosvd = plot_m6_hosvd_rank_curves(
         rank_curve_records=m5_report["hosvd_test_rank_curve"],
-        output_path=figures_dir / "m6_hosvd_rank_error_and_compression.png",
+        output_path=resolved_figures_dir / "m6_hosvd_rank_error_and_compression.png",
     )
     fig_rks = plot_m6_rks_sweep(
-        rks_summary_records=m4_report["summary_table"],
-        output_path=figures_dir / "m6_rks_sweep_quality_and_storage.png",
+        rks_summary_records=rks_summary_records,
+        output_path=resolved_figures_dir / "m6_rks_sweep_quality_and_storage.png",
     )
     fig_markov = plot_m6_markov_transition_heatmaps(
         markov_model_dict=m5_report["learned_markov_models_on_runs_4_8"]["markov_linear_svc"],
-        output_path=figures_dir / "m6_markov_transition_heatmaps.png",
+        output_path=resolved_figures_dir / "m6_markov_transition_heatmaps.png",
     )
     fig_dashboard = plot_m6_locked_comparison_dashboard(
         locked_results=m5_report["locked_test_results"],
-        output_path=figures_dir / "m6_locked_comparison_dashboard.png",
+        output_path=resolved_figures_dir / "m6_locked_comparison_dashboard.png",
     )
     fig_cm = plot_m6_confusion_matrices(
         locked_results=m5_report["locked_test_results"],
-        output_path=figures_dir / "m6_confusion_matrices_run12.png",
+        output_path=resolved_figures_dir / "m6_confusion_matrices_run12.png",
     )
 
     manifest = {
         "milestone": "M6 (Publication-Style Figures, Methodology Diagram & Viva Report)",
         "source_m5_report": str(m5_json_path),
-        "source_m4_report": str(m4_json_path),
+        "source_rks_report": source_rks_path,
         "generated_figures": {
             "hosvd_rank_error_and_compression": str(fig_hosvd),
             "rks_sweep_quality_and_storage": str(fig_rks),
@@ -571,7 +667,7 @@ def run_build_report(config_path: Path, metrics_dir: Path, figures_dir: Path) ->
         "educational_notebook": "notebooks/01_explore_eeg_and_results.ipynb",
     }
 
-    manifest_path = metrics_dir / "m6_report_manifest.json"
+    manifest_path = resolved_metrics_dir / "m6_report_manifest.json"
     with manifest_path.open("w", encoding="utf-8") as handle:
         json.dump(manifest, handle, indent=2)
 
@@ -602,9 +698,140 @@ def main(argv: list[str] | None = None) -> int:
         return run_evaluate_locked(args.config, args.output_dir)
     if args.command == "build-report":
         return run_build_report(args.config, args.metrics_dir, args.figures_dir)
+    if args.command == "audit-cohort":
+        return run_audit_cohort(args.config, args.output_dir)
+    if args.command == "validate-cohort":
+        return run_validate_cohort(args.config, args.output_dir)
 
     print(f"Unknown command: '{args.command}'", file=sys.stderr)
     return 2
+
+
+def run_validate_cohort(config_path: Path, output_dir: Path | None) -> int:
+    """Execute the E2 'validate-cohort' subcommand on Runs 4 and 8 across all eligible subjects."""
+    from eeg_p3.data import prepare_subject_dataset
+    from eeg_p3.evaluation import run_e2_cohort_development_validation
+
+    cfg = load_config(config_path)
+    resolved_out_dir = (
+        output_dir
+        if output_dir is not None
+        else Path(cfg.raw.get("outputs", {}).get("metrics_dir", "outputs/cohort_expanded/metrics"))
+    )
+    resolved_out_dir.mkdir(parents=True, exist_ok=True)
+
+    dataset = prepare_subject_dataset(cfg)
+    fold_df, summary_df, best_df, per_participant_df, report_dict = (
+        run_e2_cohort_development_validation(dataset=dataset, cfg=cfg)
+    )
+
+    folds_csv = resolved_out_dir / "e2_cohort_dev_folds.csv"
+    summary_csv = resolved_out_dir / "e2_cohort_dev_summary.csv"
+    best_csv = resolved_out_dir / "e2_cohort_best_by_family_dev.csv"
+    participant_csv = resolved_out_dir / "e2_cohort_per_participant_dev.csv"
+    report_json = resolved_out_dir / "e2_cohort_dev_report.json"
+
+    fold_df.to_csv(folds_csv, index=False)
+    summary_df.to_csv(summary_csv, index=False)
+    best_df.to_csv(best_csv, index=False)
+    per_participant_df.to_csv(participant_csv, index=False)
+    with report_json.open("w", encoding="utf-8") as handle:
+        json.dump(report_dict, handle, indent=2)
+
+    output_payload = {
+        "milestone": report_dict["milestone"],
+        "experiment_mode": report_dict["experiment_mode"],
+        "n_eligible_participants": report_dict["n_eligible_participants"],
+        "n_development_recordings": report_dict["n_development_recordings"],
+        "n_development_trials": report_dict["n_development_trials"],
+        "development_class_counts": report_dict["development_class_counts"],
+        "held_out_test_run_untouched": report_dict["held_out_test_run_untouched"],
+        "selection_protocol": report_dict["selection_protocol"],
+        "uncertainty_accounting_note": report_dict["uncertainty_accounting_note"],
+        "rks_predetermined_seed_variability_on_dev": report_dict[
+            "rks_predetermined_seed_variability_on_dev"
+        ],
+        "locked_best_by_family_on_dev": report_dict["locked_best_by_family_on_dev"],
+        "hosvd_rank_sweep_summary_on_dev": report_dict["hosvd_rank_sweep_summary_on_dev"],
+        "exported_files": {
+            "folds_csv": str(folds_csv),
+            "summary_csv": str(summary_csv),
+            "best_by_family_csv": str(best_csv),
+            "per_participant_csv": str(participant_csv),
+            "report_json": str(report_json),
+        },
+    }
+    print(json.dumps(output_payload, indent=2))
+    return 0
+
+
+def run_audit_cohort(config_path: Path, output_dir: Path | None) -> int:
+    """Execute the E1 'audit-cohort' subcommand without training models or evaluating Run 12."""
+    import pandas as pd
+    from eeg_p3.data import audit_cohort_eligibility, build_cohort_manifest_report
+
+    cfg = load_config(config_path)
+    resolved_out_dir = (
+        output_dir
+        if output_dir is not None
+        else Path(cfg.raw.get("outputs", {}).get("metrics_dir", "outputs/cohort_expanded/metrics"))
+    )
+    resolved_out_dir.mkdir(parents=True, exist_ok=True)
+
+    records = audit_cohort_eligibility(cfg)
+    manifest = build_cohort_manifest_report(cfg, records)
+
+    manifest_json_path = resolved_out_dir / "cohort_manifest.json"
+    eligibility_csv_path = resolved_out_dir / "cohort_eligibility.csv"
+
+    with manifest_json_path.open("w", encoding="utf-8") as handle:
+        json.dump(manifest, handle, indent=2)
+
+    rows = []
+    for r in records:
+        r04 = r.per_run_class_counts.get(4, {})
+        r08 = r.per_run_class_counts.get(8, {})
+        r12 = r.per_run_class_counts.get(12, {})
+        rows.append(
+            {
+                "subject_id": r.subject_id,
+                "eligible": r.eligible,
+                "status": r.status,
+                "reason_code": r.reason_code,
+                "reason_detail": r.reason_detail,
+                "run04_T1_left": r04.get("T1_left_0", 0),
+                "run04_T2_right": r04.get("T2_right_1", 0),
+                "run08_T1_left": r08.get("T1_left_0", 0),
+                "run08_T2_right": r08.get("T2_right_1", 0),
+                "run12_T1_left": r12.get("T1_left_0", 0),
+                "run12_T2_right": r12.get("T2_right_1", 0),
+            }
+        )
+    pd.DataFrame(rows).to_csv(eligibility_csv_path, index=False)
+
+    summary_output = {
+        "milestone": manifest["milestone"],
+        "experiment_mode": manifest["experiment_mode"],
+        "local_data_dir": manifest["local_data_dir"],
+        "local_data_dir_accessible": manifest["local_data_dir_accessible"],
+        "local_data_dir_access_note": manifest["local_data_dir_access_note"],
+        "cohort_audit_summary": manifest["cohort_audit_summary"],
+        "split_manifest_summary": {
+            "development_total_trials": manifest["split_manifest"]["development_total_runs_4_8"]["n_trials"],
+            "development_total_class_counts": manifest["split_manifest"]["development_total_runs_4_8"]["class_counts"],
+            "fold_1_train_run4_trials": manifest["split_manifest"]["development_fold_1_train_run4_val_run8"]["train"]["n_trials"],
+            "fold_1_val_run8_trials": manifest["split_manifest"]["development_fold_1_train_run4_val_run8"]["val"]["n_trials"],
+            "held_out_test_run12_trials": manifest["split_manifest"]["held_out_test_run_12"]["n_trials"],
+            "held_out_test_run12_class_counts": manifest["split_manifest"]["held_out_test_run_12"]["class_counts"],
+            "zero_recording_overlap_verified": manifest["split_manifest"]["development_fold_1_train_run4_val_run8"]["zero_recording_overlap_verified"],
+        },
+        "exported_files": {
+            "cohort_manifest_json": str(manifest_json_path),
+            "cohort_eligibility_csv": str(eligibility_csv_path),
+        },
+    }
+    print(json.dumps(summary_output, indent=2))
+    return 0
 
 
 if __name__ == "__main__":

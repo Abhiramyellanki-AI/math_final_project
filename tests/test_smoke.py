@@ -82,6 +82,8 @@ class TestM0ScaffoldSmoke(unittest.TestCase):
             "run-markov",
             "evaluate-locked",
             "build-report",
+            "audit-cohort",
+            "validate-cohort",
         ):
             self.assertIn(cmd, help_text)
 

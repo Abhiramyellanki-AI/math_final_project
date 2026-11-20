@@ -1,7 +1,7 @@
 # Faculty Research Report & Viva Defense Guide (Milestone M6)
 
 **Project:** P3 — Offline EEG Motor-Imagery Classification: HOSVD + SVM vs. Random Kitchen Sinks (RKS) + Linear SVM with Intra-Trial Observable Markov Chains  
-**Dataset:** PhysioNet EEG Motor Movement/Imagery Dataset (`eegmmidb` v1.0.0) — Subject 1, Runs 4, 8, and 12  
+**Dataset:** PhysioNet EEG Motor Movement/Imagery Dataset (`eegmmidb` v1.0.0) — (1) Single-Subject Pilot (`Subject 1`, `3` recordings, `45` trials) & (2) Confirmatory Multi-Participant Cohort (`Option A`, `N = 105` Eligible Participants, `315` recordings, `4,723` trials; `Runs 4, 8, 12`)  
 **Task:** Binary classification of imagined left-fist (`T1 -> 0`) vs. imagined right-fist (`T2 -> 1`) movement (excluding rest `T0`)
 
 ---
@@ -166,3 +166,93 @@ All figures are reproducible via `python -m eeg_p3.cli plot-eeg` and `python -m 
 5. **Scikit-Learn Pipelines & Support Vector Machines:**
    - Pedregosa, F., et al. (2011). *Scikit-learn: Machine learning in Python.* JMLR, 12, 2825–2830.
    - scikit-learn `Pipeline` Docs: https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html
+
+---
+
+## 9. Confirmatory Multi-Participant Cohort Expansion (Option A — Stages `E1 – E3`)
+
+To address the high validation variance of the single-subject pilot (`N = 1`, `30` development trials, `15` test trials) without test-set leakage, we expanded the experiment to all eligible participants in the local PhysioNet `eegmmidb-1.0.0` dataset under **Option A** (train on `Runs 4 and 8` across eligible participants; test on held-out `Run 12` from those **same eligible participants**).
+
+### 9.1 Pre-Evaluation Eligibility Audit & Split Manifest (`Stage E1`)
+- **Pilot Separation:** Subject 1 (`S001`) was excluded by default (`excluded_subject_ids: [1]`) because Subject 1's `Run 12` was already inspected in the pilot experiment.
+- **Automated Pre-Evaluation Quality Audit (`audit-cohort`):** Out of `109` total participants (`Subject 1` + candidate `Subjects 2..109`):
+  - **Eligible Cohort (`N = 105` participants):** All subjects in `2..109` except `88, 92, 100`.
+  - **Excluded Participants (`4` total, logged prior to any model evaluation):**
+    1. `Subject 1 (S001)`: `excluded_pilot_subject` (Run 12 inspected in pilot).
+    2. `Subject 88 (S088)`: `sfreq_mismatch` (Runs 4/8/12 recorded at `128.0 Hz` instead of required `160.0 Hz`).
+    3. `Subject 92 (S092)`: `sfreq_mismatch` (Runs 4/8/12 recorded at `128.0 Hz` instead of required `160.0 Hz`).
+    4. `Subject 100 (S100)`: `sfreq_mismatch` (Runs 4/8/12 recorded at `128.0 Hz` instead of required `160.0 Hz`).
+  - *Note:* Subject 89 (`S089`) has `13` valid trials (`7` Left, `6` Right) in Run 8 instead of `15` due to EDF recording duration, which passes `min_trials_per_run: 1` and `require_both_classes_per_run: true`. No participant was ever excluded due to model accuracy.
+- **Exact Cohort Split & Class Balance (`315` recordings, `4,723` trials):**
+  - **Development Total (`Runs 4 + 8`, `210` recordings):** **`3,148` trials** (`1,589` Left `T1=0` [50.48%], `1,559` Right `T2=1` [49.52%]).
+    - **Fold 1:** Train on `Run 4` (`105` recordings, `1,575` trials: `801` Left, `774` Right) $\rightarrow$ Validate on `Run 8` (`105` recordings, `1,573` trials: `788` Left, `785` Right).
+    - **Fold 2:** Train on `Run 8` (`105` recordings, `1,573` trials) $\rightarrow$ Validate on `Run 4` (`105` recordings, `1,575` trials).
+  - **Held-Out Test (`Run 12`, `105` recordings):** **`1,575` trials** (`794` Left `T1=0` [50.41%], `781` Right `T2=1` [49.59%]).
+
+### 9.2 Confirmatory Cohort Master Comparison — All 8 Faculty Measures (`Stages E2 & E3`)
+
+#### Table 9.2A: Classification Quality, Participant-Clustered Uncertainty & Compression (Measures 1, 2, 5, 6, 7)
+*(Trained on Combined `Runs 4 + 8`, $N_{\text{train}} = 3,148$ trials across $105$ participants; Evaluated ONCE on Held-Out `Run 12`, $N_{\text{test}} = 1,575$ trials across the same $105$ participants)*
+
+| Model Family | Locked Config (from Runs 4↔8 CV) | Dev CV Pooled Acc (±2-Fold SD) | Dev CV Macro F1 | **Test Run 12 Pooled Acc** | **Test Balanced Acc** | **Test Macro Prec / Rec / F1** | **Test Participant Mean Acc ± SD (95% CI, $N=105, df=104$)** | **Test Participant Median (IQR; Min–Max)** | Test Confusion Matrix `[[TN,FP],[FN,TP]]` | Features ($p$) & Compression ($\frac{20,480}{p}$) | HOSVD Recon Error (Train / Test) |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **1. Baseline LinearSVC** | `LinearSVC_C=0.1` | `57.02% ± 0.12%` | `0.5701` | **`57.84%`** (`911/1575`) | **`57.85%`** | `0.5786 / 0.5785 / 0.5784` | **`57.84% ± 13.54%`** (`[55.22%, 60.46%]`) | `60.00%` (`20.00%`; `26.67%–93.33%`) | `[[449, 345], [319, 462]]` | `128` (`160.0x`) | N/A |
+| **2. Baseline RBF SVC** | `RBF_SVC_C=10_gamma=scale` | `55.59% ± 0.04%` | `0.5558` | **`58.16%`** (`916/1575`) | **`58.12%`** | **`0.5820 / 0.5812 / 0.5803`** | **`58.16% ± 14.37%`** (**`[55.38%, 60.94%]`**) | `60.00%` (`20.00%`; `20.00%–100.00%`) | `[[502, 292], [367, 414]]` | `128` (`160.0x`) | N/A |
+| **3. HOSVD + LinearSVC** | `HOSVD_rc=8_rt=10_C=0.1` | `50.54% ± 1.78%` | `0.5054` | **`47.94%`** (`755/1575`) | `47.92%` | `0.4791 / 0.4792 / 0.4790` | **`47.94% ± 12.61%`** (`[45.50%, 50.38%]`) | `46.67%` (`20.00%`; `13.33%–80.00%`) | `[[398, 396], [424, 357]]` | `80` (`256.0x`; `252.3x` tensor) | `0.8631 / 0.8620` |
+| **4. RKS + LinearSVC** | `RKS_D=256_gamma=0.001_C=10` | **`57.56% ± 0.10%`** | **`0.5752`** | **`57.59%`** (`907/1575`) | `57.58%` | `0.5758 / 0.5758 / 0.5758` | **`57.59% ± 14.12%`** (`[54.86%, 60.32%]`) | `53.33%` (`20.00%`; `20.00%–93.33%`) | `[[464, 330], [338, 443]]` | `256` (`80.0x`; `2.0x` vs BP) | N/A |
+| **5. Standalone Markov** | `Markov_K=3_C=0.1` | `50.76% ± 0.09%` | `0.5052` | **`50.79%`** (`800/1575`) | `50.83%` | `0.5084 / 0.5083 / 0.5070` | **`50.79% ± 11.67%`** (`[48.53%, 53.05%]`) | `53.33%` (`13.33%`; `20.00%–80.00%`) | `[[365, 429], [346, 435]]` | **`15` (`1,365.3x`)** | N/A |
+| **6. HOSVD + Markov** | `HOSVD(16,40)+Markov(K=6), C=0.1` | `48.79% ± 0.29%` | `0.4877` | **`48.19%`** (`759/1575`) | `48.18%` | `0.4818 / 0.4818 / 0.4818` | **`48.19% ± 12.03%`** (`[45.86%, 50.52%]`) | `46.67%` (`20.00%`; `20.00%–73.33%`) | `[[391, 403], [413, 368]]` | `685` (`29.90x`) | `0.6220 / 0.6468` |
+| **7. RKS + Markov** | `RKS(256,0.01)+Markov(K=4), C=0.1` | `55.21% ± 0.29%` | `0.5515` | **`57.08%`** (`899/1575`) | `57.05%` | `0.5709 / 0.5705 / 0.5701` | **`57.08% ± 13.10%`** (`[54.54%, 59.62%]`) | `60.00%` (`20.00%`; `20.00%–86.67%`) | `[[481, 313], [363, 418]]` | `279` (`73.41x`) | N/A |
+
+#### Table 9.2B: Per-Class Precision, Recall & F1 on Held-Out Run 12 (`1,575` Trials: `794` Left `T1=0`, `781` Right `T2=1`)
+
+| Model Family | Left Fist (`T1=0`, $n=794$) Precision | Left Fist (`T1=0`) Recall | Left Fist (`T1=0`) F1 | Right Fist (`T2=1`, $n=781$) Precision | Right Fist (`T2=1`) Recall | Right Fist (`T2=1`) F1 |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **1. Baseline LinearSVC** | `0.5846` | `0.5655` | `0.5749` | `0.5725` | `0.5915` | `0.5819` |
+| **2. Baseline RBF SVC** | `0.5777` | `0.6322` | `0.6037` | `0.5864` | `0.5301` | `0.5568` |
+| **3. HOSVD + LinearSVC** | `0.4842` | `0.5013` | `0.4926` | `0.4741` | `0.4571` | `0.4654` |
+| **4. RKS + LinearSVC** | `0.5786` | `0.5844` | `0.5815` | `0.5731` | `0.5672` | `0.5701` |
+| **5. Standalone Markov** | `0.5134` | `0.4597` | `0.4850` | `0.5035` | `0.5570` | `0.5289` |
+| **6. HOSVD + Markov** | `0.4863` | `0.4924` | `0.4894` | `0.4773` | `0.4712` | `0.4742` |
+| **7. RKS + Markov** | `0.5699` | `0.6058` | `0.5873` | `0.5718` | `0.5352` | `0.5529` |
+
+#### Table 9.2C: Multi-Participant Runtime & Memory / Storage Scaling (Measures 3, 4, 8)
+*(Batch timings across $N_{\text{train}} = 3,148$ training trials and $N_{\text{test}} = 1,575$ held-out test trials)*
+
+| Model Family | Train Feature Time (s) | **SVM Training Time (ms)** | Test Feature Batch Time (s) | **SVM Predict Batch Time (ms)** | **Total Test Prediction Batch Time (s)** | **Per-Trial Predict Time (ms)** | Feature Vector Bytes / Trial | **Total Deployed Model Storage (Bytes)** |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **1. Baseline LinearSVC** | `3.298` | `147.78` | `1.497` | `1.63` (`0.0010 ms/trial`) | `1.498` | `0.951` | `1,024` | `4,104` (`4.01 KB`) |
+| **2. Baseline RBF SVC** | `3.194` | `847.75` | `1.481` | **`716.12` (`0.4547 ms/trial`)** | `2.197` | `1.395` | `1,024` | **`2,907,128` (`2.77 MB`)** |
+| **3. HOSVD + LinearSVC** | `6.230` | `34.68` | **`0.0245`** | `1.48` (`0.0009 ms/trial`) | **`0.0259`** | **`0.0165`** | `640` | `32,264` (`31.51 KB`) |
+| **4. RKS + LinearSVC** | `2.946` | `365.83` | `1.467` | **`0.82` (`0.0005 ms/trial`)** | `1.468` | `0.932` | `2,048` | `269,320` (`263.01 KB`) |
+| **5. Standalone Markov** | `6.780` | **`10.49`** | `0.687` | **`0.62` (`0.0004 ms/trial`)** | `0.688` | `0.437` | **`120`** | **`2,888` (`2.82 KB`)** |
+| **6. HOSVD + Markov** | `11.473` | `1,464.43` | `0.820` | `8.83` (`0.0056 ms/trial`) | `0.828` | `0.526` | `5,480` | `135,496` (`132.32 KB`) |
+| **7. RKS + Markov** | `8.243` | `736.91` | `2.145` | `3.58` (`0.0023 ms/trial`) | `2.149` | `1.364` | `2,232` | `278,760` (`272.23 KB`) |
+
+### 9.3 Key Scientific Conclusions from the 105-Participant Cohort Expansion
+
+1. **Statistical Reliability vs. Single-Subject Variance (Why More Participants Improve Evidence Without Artificially Inflating Accuracy):**
+   - In the `Subject 1` pilot (`30` dev trials, `15` test trials), hyperparameter selection on 2 runs exhibited a `20–30` percentage-point drop between development CV (`73.3%–83.3%`) and held-out Run 12 (`53.3%`).
+   - In the `105-Participant` confirmatory cohort (`3,148` dev trials, `1,575` test trials), **every locked model family's Held-Out Run 12 accuracy agrees with its development CV accuracy within `0.03–2.60` percentage points**:
+     - `RKS (D=256, γ=0.001, C=10)`: `57.56%` Dev $\rightarrow$ **`57.59%` Test** (`95% CI: [54.86%, 60.32%]`)
+     - `Baseline LinearSVC (C=0.1)`: `57.02%` Dev $\rightarrow$ **`57.84%` Test** (`95% CI: [55.22%, 60.46%]`)
+     - `Baseline RBF SVC (C=10, γ=scale)`: `55.59%` Dev $\rightarrow$ **`58.16%` Test** (`95% CI: [55.38%, 60.94%]`)
+     - `RKS + Markov (D=256, γ=0.01, K=4, C=0.1)`: `55.21%` Dev $\rightarrow$ **`57.08%` Test** (`95% CI: [54.54%, 59.62%]`)
+     - `Standalone Markov (K=3, C=0.1)`: `50.76%` Dev $\rightarrow$ **`50.79%` Test** (`95% CI: [48.53%, 53.05%]`)
+   - **Validation-Fold SD vs. Participant-Clustered 95% CI:** The 2-fold validation SD (`±0.04%` to `±0.29%`) only reflects the spread between the two pooled run-swapped folds (`Run 4->8` vs. `Run 8->4`) and is **not** a confidence interval. Accounting for participant clustering across the $N = 105$ independent participants ($df = 104$) yields a standard error of `~1.3%–1.4%` (`95% CI half-width ~ ±2.6%–2.8%`), proving that all four spectral/RKS pipelines generalize significantly above 50% chance ($t > 5.5, p < 10^{-7}$), while individual participant test accuracies span `20.00%` to `100.00%` (median `60.00%`, IQR `20.00%`) due to inter-subject anatomical and BCI-literacy variability.
+2. **Computational & Storage Advantage of RKS (`RBFSampler`) Over Exact RBF SVC at Multi-Participant Scale:**
+   - When scaling from `30` training trials (pilot) to `3,148` training trials (105-participant cohort), exact `SVC(kernel="rbf")` must store thousands of 128-D support vectors, inflating its deployed memory footprint **`88x`** (from `33,008` B to **`2,907,128` B = `2.77 MB`**) and requiring **`716.12 ms`** of SVM prediction time on Run 12.
+   - By contrast, **`RKS (D=256, γ=0.001, C=10) + LinearSVC`** has a fixed parameter size independent of $N_{\text{train}}$ (**`269,320` B = `263.01 KB`, `10.8x` smaller than RBF SVC**), trains **`2.3x` faster** (`365.83 ms` vs. `847.75 ms`), and executes SVM batch prediction across 1,575 test trials in **`0.82 ms` (`870x` faster than exact RBF SVC)** while achieving statistically indistinguishable accuracy (`57.59%` vs. `58.16%`, overlapping 95% CIs).
+3. **Why Time-Domain Bilinear HOSVD & HOSVD-Sub-Basis Markov Require Phase-Invariant Inputs Across Multiple Participants:**
+   - Projecting raw band-pass filtered time-domain waveforms via a single global temporal basis $U_t \in \mathbb{R}^{320 \times r_t}$ across 105 participants yields near-chance classification (`47.94%` for HOSVD, `50.79%` for Markov) because sensorimotor $\mu/\beta$ ERD/ERS oscillations are **induced (non-phase-locked)** rather than phase-locked to cue onset across subjects and trials. However, HOSVD's subspace reconstruction generalizes with virtually zero overfitting across 105 participants: relative Frobenius error on `Run 12` (`1,575` test trials) matches `Runs 4+8` (`3,148` training trials) across every rank pair (e.g., `0.8631` train vs. `0.8620` test at locked rank `(8,10)`, and `0.6220` train vs. `0.6468` test at rank `(16,40)`).
+
+### 9.4 Generated Confirmatory Cohort Artifacts & Figures
+- **Cohort Manifest & Eligibility Audit (`E1`):** [cohort_manifest.json](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/outputs/cohort_expanded/metrics/cohort_manifest.json), [cohort_eligibility.csv](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/outputs/cohort_expanded/metrics/cohort_eligibility.csv)
+- **Cohort Development Validation (`E2`):** [e2_cohort_dev_report.json](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/outputs/cohort_expanded/metrics/e2_cohort_dev_report.json), [e2_cohort_best_by_family_dev.csv](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/outputs/cohort_expanded/metrics/e2_cohort_best_by_family_dev.csv), [e2_cohort_dev_summary.csv](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/outputs/cohort_expanded/metrics/e2_cohort_dev_summary.csv), [e2_cohort_dev_folds.csv](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/outputs/cohort_expanded/metrics/e2_cohort_dev_folds.csv), [e2_cohort_per_participant_dev.csv](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/outputs/cohort_expanded/metrics/e2_cohort_per_participant_dev.csv)
+- **Cohort Locked Final Evaluation (`E3`):** [m5_locked_test_report.json](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/outputs/cohort_expanded/metrics/m5_locked_test_report.json), [m5_locked_test_results.csv](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/outputs/cohort_expanded/metrics/m5_locked_test_results.csv), [m5_per_participant_test_results.csv](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/outputs/cohort_expanded/metrics/m5_per_participant_test_results.csv), [m5_hosvd_test_rank_curve.csv](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/outputs/cohort_expanded/metrics/m5_hosvd_test_rank_curve.csv)
+- **Cohort Publication Figures (`E3`):**
+  1. [m6_locked_comparison_dashboard.png](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/outputs/cohort_expanded/figures/m6_locked_comparison_dashboard.png)
+  2. [m6_confusion_matrices_run12.png](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/outputs/cohort_expanded/figures/m6_confusion_matrices_run12.png)
+  3. [m6_hosvd_rank_error_and_compression.png](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/outputs/cohort_expanded/figures/m6_hosvd_rank_error_and_compression.png)
+  4. [m6_rks_sweep_quality_and_storage.png](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/outputs/cohort_expanded/figures/m6_rks_sweep_quality_and_storage.png)
+  5. [m6_markov_transition_heatmaps.png](file:///c:/Users/Abhiram/OneDrive/Documents/sem3/MIS-3/END%20SEM%20PROJECT/outputs/cohort_expanded/figures/m6_markov_transition_heatmaps.png)

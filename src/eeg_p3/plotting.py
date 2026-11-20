@@ -227,25 +227,39 @@ def plot_m6_rks_sweep(
     output_path: str | Path,
 ) -> Path:
     """Plot RKS random-feature dimension D and bandwidth gamma vs. validation accuracy & storage."""
+    import json
+
     out = Path(output_path)
     out.parent.mkdir(parents=True, exist_ok=True)
 
-    d_values = sorted({int(r["n_components"]) for r in rks_summary_records})
-    gammas = sorted({float(r["gamma"]) for r in rks_summary_records})
+    normalized_records: list[dict] = []
+    for r in rks_summary_records:
+        rec = dict(r)
+        if "n_components" not in rec or "gamma" not in rec:
+            p = json.loads(str(rec.get("params_json", "{}")))
+            rec.setdefault("n_components", int(p["n_components"]))
+            rec.setdefault("gamma", float(p["gamma"]))
+        normalized_records.append(rec)
+
+    d_values = sorted({int(r["n_components"]) for r in normalized_records})
+    gammas = sorted({float(r["gamma"]) for r in normalized_records})
 
     fig, axes = plt.subplots(1, 2, figsize=(12.5, 5.0))
     colors = ["#1b9e77", "#d95f02", "#7570b3"]
     markers = ["o", "s", "^"]
 
+    all_plotted_accs: list[float] = []
     for idx, g_val in enumerate(gammas):
         best_accs: list[float] = []
         for d_val in d_values:
             matching = [
                 float(r["mean_accuracy"]) * 100.0
-                for r in rks_summary_records
+                for r in normalized_records
                 if int(r["n_components"]) == d_val and np.isclose(float(r["gamma"]), g_val)
             ]
-            best_accs.append(max(matching) if matching else 0.0)
+            val = max(matching) if matching else 0.0
+            best_accs.append(val)
+            all_plotted_accs.append(val)
         axes[0].plot(
             d_values,
             best_accs,
@@ -260,14 +274,16 @@ def plot_m6_rks_sweep(
     axes[0].set_ylabel("Development CV Mean Accuracy (%) [Runs 4↔8]")
     axes[0].set_xlabel("RKS Random Fourier Components $D$ (Expansion Ratio)")
     axes[0].set_title("A. RKS Bandwidth $\\gamma$ & Dimension $D$ vs. Dev Accuracy")
-    axes[0].set_ylim(45, 90)
+    min_y = max(35.0, min(all_plotted_accs) - 6.0) if all_plotted_accs else 45.0
+    max_y = min(100.0, max(all_plotted_accs) + 8.0) if all_plotted_accs else 90.0
+    axes[0].set_ylim(min_y, max_y)
     axes[0].grid(True, alpha=0.3)
     axes[0].legend(loc="upper right")
 
     storage_kb: list[float] = []
     feat_kb: list[float] = []
     for d_val in d_values:
-        matching_rows = [r for r in rks_summary_records if int(r["n_components"]) == d_val]
+        matching_rows = [r for r in normalized_records if int(r["n_components"]) == d_val]
         storage_kb.append(float(matching_rows[0]["model_storage_bytes_mean"]) / 1024.0)
         feat_kb.append(float(matching_rows[0]["feature_bytes_per_trial"]) / 1024.0)
 
@@ -458,14 +474,15 @@ def plot_m6_confusion_matrices(
     for idx, res in enumerate(locked_results):
         ax = axes_flat[idx]
         cm = np.asarray(res["test_confusion_matrix"], dtype=np.int64)
-        im = ax.imshow(cm, cmap="Blues", vmin=0, vmax=8)
+        cell_max = max(int(np.max(cm)), 8)
+        im = ax.imshow(cm, cmap="Blues", vmin=0, vmax=cell_max)
         ax.set_xticks([0, 1])
         ax.set_yticks([0, 1])
         ax.set_xticklabels(["Pred Left (0)", "Pred Right (1)"], fontsize=8.5)
         ax.set_yticklabels(["True Left (0)", "True Right (1)"], fontsize=8.5)
         ax.set_title(
             f"{res['locked_config_id']}\nTest Acc: {float(res['test_accuracy'])*100:.1f}% | F1: {float(res['test_f1_macro']):.2f}",
-            fontsize=9,
+            fontsize=8.5,
             fontweight="bold",
         )
         for i in range(2):
@@ -477,8 +494,8 @@ def plot_m6_confusion_matrices(
                     str(val),
                     ha="center",
                     va="center",
-                    color="white" if val >= 5 else "black",
-                    fontsize=12,
+                    color="white" if val >= 0.55 * cell_max else "black",
+                    fontsize=11,
                     fontweight="bold",
                 )
         fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
@@ -486,8 +503,16 @@ def plot_m6_confusion_matrices(
     for idx in range(n_models, len(axes_flat)):
         axes_flat[idx].axis("off")
 
+    if locked_results:
+        n_left = int(locked_results[0].get("test_support_class_0_left", 0))
+        n_right = int(locked_results[0].get("test_support_class_1_right", 0))
+        n_tot = n_left + n_right
+        subtitle = f"N={n_tot} Trials: {n_left} Left T1, {n_right} Right T2"
+    else:
+        subtitle = "Held-Out Run 12"
+
     fig.suptitle(
-        "Milestone M6 — Held-Out Test Run 12 Confusion Matrices (N=15 Trials: 7 Left T1, 8 Right T2)",
+        f"Milestone M6 — Held-Out Test Run 12 Confusion Matrices ({subtitle})",
         fontsize=12.5,
         fontweight="bold",
     )

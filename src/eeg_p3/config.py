@@ -1,4 +1,4 @@
-"""Configuration loading and leakage-guardrail validation for eeg_p3."""
+"""Configuration loading and leakage-guardrail validation for eeg_p3 (Single-Subject & Cohort)."""
 
 from __future__ import annotations
 
@@ -9,14 +9,21 @@ from typing import Any
 import yaml
 
 
+# Allowed left-vs-right hand motor imagery runs in PhysioNet eegmmidb
+ALLOWED_HAND_IMAGERY_RUNS = frozenset({4, 8, 12})
+
+
 @dataclass(frozen=True)
 class DataConfig:
-    """Dataset path, subject, split, and annotation contract settings."""
+    """Dataset path, subject/cohort selection, split, and annotation contract settings."""
 
     dataset_name: str
     local_data_dir: Path
     allow_download_fallback: bool
-    subject_id: int
+    subject_id: int  # Primary subject ID (for single-subject pilot compatibility)
+    candidate_subject_ids: tuple[int, ...]
+    excluded_subject_ids: tuple[int, ...]
+    is_multi_subject: bool
     development_runs: tuple[int, ...]
     held_out_test_run: int
     expected_channels: int
@@ -24,6 +31,8 @@ class DataConfig:
     signal_unit: str
     label_mapping: dict[str, int]
     excluded_annotations: tuple[str, ...]
+    min_trials_per_run: int = 1
+    require_both_classes_per_run: bool = True
 
 
 @dataclass(frozen=True)
@@ -52,6 +61,48 @@ class ProjectConfig:
     raw: dict[str, Any]
 
 
+def _resolve_subject_lists(data_cfg: dict[str, Any]) -> tuple[int, tuple[int, ...], tuple[int, ...], bool]:
+    """Parse single-subject or multi-subject candidate and excluded subject ID lists."""
+    excluded_ids = tuple(sorted({int(s) for s in data_cfg.get("excluded_subject_ids", [])}))
+
+    if "candidate_subject_ids" in data_cfg:
+        raw_candidates = [int(s) for s in data_cfg["candidate_subject_ids"]]
+        is_multi = True
+    elif "candidate_subject_range" in data_cfg:
+        bounds = data_cfg["candidate_subject_range"]
+        if not isinstance(bounds, (list, tuple)) or len(bounds) != 2:
+            raise ValueError(f"candidate_subject_range must be [start, end], got {bounds}.")
+        start_id, end_id = int(bounds[0]), int(bounds[1])
+        if start_id < 1 or end_id < start_id or end_id > 109:
+            raise ValueError(f"Invalid candidate_subject_range [{start_id}, {end_id}] (must be within 1..109).")
+        raw_candidates = list(range(start_id, end_id + 1))
+        is_multi = True
+    elif "subject_id" in data_cfg:
+        sid = int(data_cfg["subject_id"])
+        if sid < 1 or sid > 109:
+            raise ValueError(f"Invalid subject_id={sid} (must be in 1..109).")
+        raw_candidates = [sid]
+        is_multi = False
+    else:
+        raise ValueError(
+            "Config 'data' section must specify 'subject_id', 'candidate_subject_ids', "
+            "or 'candidate_subject_range'."
+        )
+
+    for sid in raw_candidates:
+        if sid < 1 or sid > 109:
+            raise ValueError(f"Invalid subject ID {sid} (PhysioNet eegmmidb has subjects 1..109).")
+
+    active_candidates = tuple(s for s in raw_candidates if s not in excluded_ids)
+    if not active_candidates:
+        raise ValueError(
+            f"No candidate subjects remain after applying excluded_subject_ids={excluded_ids}."
+        )
+
+    primary_subject_id = int(data_cfg.get("subject_id", active_candidates[0]))
+    return primary_subject_id, active_candidates, excluded_ids, is_multi
+
+
 def validate_config_dict(raw: dict[str, Any]) -> None:
     """Validate raw configuration dictionary against PRD and AGENTS.md rules.
 
@@ -64,6 +115,13 @@ def validate_config_dict(raw: dict[str, Any]) -> None:
             raise ValueError(f"Missing required config section: '{section}'")
 
     data_cfg = raw["data"]
+    _resolve_subject_lists(data_cfg)
+
+    if bool(data_cfg.get("allow_download_fallback", False)):
+        raise ValueError(
+            "Automatic dataset downloading is disabled by policy (allow_download_fallback must be false)."
+        )
+
     dev_runs = tuple(int(r) for r in data_cfg.get("development_runs", []))
     test_run = int(data_cfg.get("held_out_test_run", -1))
 
@@ -76,6 +134,14 @@ def validate_config_dict(raw: dict[str, Any]) -> None:
         )
     if len(set(dev_runs)) != len(dev_runs):
         raise ValueError(f"Duplicate runs found in development_runs: {dev_runs}")
+
+    all_configured_runs = set(dev_runs) | {test_run}
+    disallowed_runs = all_configured_runs - ALLOWED_HAND_IMAGERY_RUNS
+    if disallowed_runs:
+        raise ValueError(
+            f"Task purity violation: runs {sorted(disallowed_runs)} are not imagined left/right fist "
+            f"runs. Only runs {sorted(ALLOWED_HAND_IMAGERY_RUNS)} are permitted."
+        )
 
     label_map = data_cfg.get("label_mapping", {})
     if label_map.get("T1") != 0 or label_map.get("T2") != 1:
@@ -127,11 +193,16 @@ def load_config(config_path: str | Path) -> ProjectConfig:
     data = raw["data"]
     prep = raw["preprocessing"]
 
+    primary_sid, candidate_sids, excluded_sids, is_multi = _resolve_subject_lists(data)
+
     data_config = DataConfig(
         dataset_name=str(data["dataset_name"]),
         local_data_dir=Path(str(data["local_data_dir"])),
         allow_download_fallback=bool(data.get("allow_download_fallback", False)),
-        subject_id=int(data["subject_id"]),
+        subject_id=primary_sid,
+        candidate_subject_ids=candidate_sids,
+        excluded_subject_ids=excluded_sids,
+        is_multi_subject=is_multi,
         development_runs=tuple(int(r) for r in data["development_runs"]),
         held_out_test_run=int(data["held_out_test_run"]),
         expected_channels=int(data["expected_channels"]),
@@ -139,6 +210,8 @@ def load_config(config_path: str | Path) -> ProjectConfig:
         signal_unit=str(data["signal_unit"]),
         label_mapping={str(k): int(v) for k, v in data["label_mapping"].items()},
         excluded_annotations=tuple(str(a) for a in data["excluded_annotations"]),
+        min_trials_per_run=int(data.get("min_trials_per_run", 1)),
+        require_both_classes_per_run=bool(data.get("require_both_classes_per_run", True)),
     )
 
     prep_config = PreprocessingConfig(

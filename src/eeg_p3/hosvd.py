@@ -57,6 +57,34 @@ def unfold_time_mode(X: np.ndarray) -> np.ndarray:
     return np.transpose(X, (2, 0, 1)).reshape(n_times, n_trials * n_channels)
 
 
+def _left_svd_wide_matrix(A: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Compute deterministic left singular vectors U and singular values s of matrix A (m, n).
+
+    For wide multi-participant unfoldings (n > 20,000 with m << n), uses Householder QR
+    reduction A^T = Q R (mode='r') followed by SVD of R^T (m, m), yielding the exact
+    left singular vectors and singular values without allocating an (m, n) right singular
+    matrix V^T.
+    """
+    m, n = A.shape
+    if n > 20000 and m < n:
+        R = np.linalg.qr(A.T, mode="r")
+        U_raw, s, _ = np.linalg.svd(R.T, full_matrices=False)
+    else:
+        U_raw, s, _ = np.linalg.svd(A, full_matrices=False)
+    return _fix_left_singular_vector_signs(U_raw), s
+
+
+def fit_channel_hosvd_basis(X_train: np.ndarray, r_c: int) -> np.ndarray:
+    """Compute top-r_c deterministic orthonormal channel singular vectors U_c from X_train."""
+    if X_train.ndim != 3:
+        raise ValueError(f"Expected 3D training tensor (N_train, C, T), got {X_train.shape}.")
+    X_mode_c = unfold_channel_mode(X_train)
+    U_c_full, _ = _left_svd_wide_matrix(X_mode_c)
+    if not (1 <= r_c <= U_c_full.shape[1]):
+        raise ValueError(f"Invalid channel rank r_c={r_c}; must be in [1, {U_c_full.shape[1]}].")
+    return U_c_full[:, :r_c].astype(np.float64, copy=True)
+
+
 def fit_full_hosvd_singular_spaces(
     X_train: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -75,12 +103,10 @@ def fit_full_hosvd_singular_spaces(
         raise ValueError(f"Expected 3D training tensor (N_train, C, T), got {X_train.shape}.")
 
     X_mode_c = unfold_channel_mode(X_train)
-    U_c_raw, s_c, _ = np.linalg.svd(X_mode_c, full_matrices=False)
-    U_c_full = _fix_left_singular_vector_signs(U_c_raw)
+    U_c_full, s_c = _left_svd_wide_matrix(X_mode_c)
 
     X_mode_t = unfold_time_mode(X_train)
-    U_t_raw, s_t, _ = np.linalg.svd(X_mode_t, full_matrices=False)
-    U_t_full = _fix_left_singular_vector_signs(U_t_raw)
+    U_t_full, s_t = _left_svd_wide_matrix(X_mode_t)
 
     return U_c_full, s_c, U_t_full, s_t
 

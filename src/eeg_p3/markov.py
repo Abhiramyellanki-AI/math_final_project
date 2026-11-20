@@ -34,7 +34,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 
-from eeg_p3.hosvd import fit_hosvd_bases
+from eeg_p3.hosvd import fit_channel_hosvd_basis
 
 
 @dataclass(frozen=True)
@@ -256,8 +256,7 @@ class IntraTrialMarkovFeatureExtractor(BaseEstimator, TransformerMixin):
             raise ValueError(f"Length of y ({len(y_arr)}) does not match X.shape[0] ({X.shape[0]}).")
 
         # 1. Learn spatial projection basis strictly from training tensor X
-        bases = fit_hosvd_bases(X, r_c=int(self.spatial_rank_sub), r_t=1)
-        self.U_c_sub_ = bases.U_c  # (C, r_sub)
+        self.U_c_sub_ = fit_channel_hosvd_basis(X, r_c=int(self.spatial_rank_sub))  # (C, r_sub)
 
         # 2. Extract training sub-window observations (N_train, M, r_sub)
         obs = extract_subwindow_observations(

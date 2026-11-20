@@ -1,4 +1,4 @@
-"""Per-run band-pass filtering and fixed post-cue epoch extraction (Milestone M1).
+"""Per-run band-pass filtering and fixed post-cue epoch extraction (M1 & Cohort Expansion).
 
 Non-negotiable rules enforced:
 - Every EDF recording run is filtered independently before epoch extraction.
@@ -6,6 +6,8 @@ Non-negotiable rules enforced:
 - No global scaler or data-dependent learned transform is applied during preprocessing.
 - Fixed half-open post-cue window [0.5, 2.5) s yields exactly 320 samples at 160 Hz.
 - Rest annotations (T0) are excluded; T1 -> 0 (left imagery), T2 -> 1 (right imagery).
+- Preserves subject_id, run_id, unique recording_id ('S002R04'), global_trial_id ('S002R04_T00'),
+  and strict chronological cue order for every trial.
 """
 
 from __future__ import annotations
@@ -17,9 +19,19 @@ import mne
 import numpy as np
 
 
+def format_recording_id(subject_id: int, run_id: int) -> str:
+    """Format a participant-and-run unique recording identifier (e.g., 'S002R04')."""
+    return f"S{int(subject_id):03d}R{int(run_id):02d}"
+
+
+def format_global_trial_id(subject_id: int, run_id: int, trial_index_in_run: int) -> str:
+    """Format a globally unique trial identifier across participants and runs (e.g., 'S002R04_T00')."""
+    return f"{format_recording_id(subject_id, run_id)}_T{int(trial_index_in_run):02d}"
+
+
 @dataclass(frozen=True)
 class TrialMetadata:
-    """Per-trial provenance metadata preserving subject, run, label, and cue timing."""
+    """Per-trial provenance metadata preserving subject, run, recording ID, label, and cue timing."""
 
     subject_id: int
     run_id: int
@@ -30,6 +42,20 @@ class TrialMetadata:
     onset_sample: int
     epoch_start_sample: int
     epoch_stop_sample: int
+    recording_id: str = ""
+    global_trial_id: str = ""
+
+    def __post_init__(self) -> None:
+        if not self.recording_id:
+            object.__setattr__(
+                self, "recording_id", format_recording_id(self.subject_id, self.run_id)
+            )
+        if not self.global_trial_id:
+            object.__setattr__(
+                self,
+                "global_trial_id",
+                format_global_trial_id(self.subject_id, self.run_id, self.trial_index_in_run),
+            )
 
 
 @dataclass(frozen=True)
@@ -48,6 +74,20 @@ class RunEpochsResult:
     annotation_counts: dict[str, int]
     trials_metadata: tuple[TrialMetadata, ...]
     filter_params: dict[str, Any]
+    recording_id: str = ""
+    subject_ids: np.ndarray | None = None
+
+    def __post_init__(self) -> None:
+        if not self.recording_id:
+            object.__setattr__(
+                self, "recording_id", format_recording_id(self.subject_id, self.run_id)
+            )
+        if self.subject_ids is None:
+            object.__setattr__(
+                self,
+                "subject_ids",
+                np.full(shape=(len(self.y),), fill_value=int(self.subject_id), dtype=np.int64),
+            )
 
 
 def filter_raw_run_independently(
@@ -57,18 +97,7 @@ def filter_raw_run_independently(
     filter_method: str = "fir",
     fir_design: str = "firwin",
 ) -> mne.io.BaseRaw:
-    """Apply an offline band-pass filter to a copy of a single independent raw run.
-
-    Args:
-        raw: Preloaded MNE Raw object for a single recording run.
-        low_hz: Lower passband edge in Hz (default 8.0 Hz for mu band).
-        high_hz: Upper passband edge in Hz (default 30.0 Hz for beta band).
-        filter_method: MNE filter method ('fir').
-        fir_design: FIR window design ('firwin').
-
-    Returns:
-        Filtered copy of the MNE Raw recording (units preserved in Volts).
-    """
+    """Apply an offline band-pass filter to a copy of a single independent raw run."""
     if not (0.0 < low_hz < high_hz):
         raise ValueError(f"Invalid bandpass cutoff frequencies: [{low_hz}, {high_hz}] Hz.")
 
@@ -104,27 +133,7 @@ def extract_epochs_from_filtered_run(
     excluded_annotations: tuple[str, ...] = ("T0",),
     filter_params: dict[str, Any] | None = None,
 ) -> RunEpochsResult:
-    """Extract fixed [tmin_sec, tmax_sec) post-cue motor-imagery epochs from a single run.
-
-    Uses exact sample indexing based on the recording's measured sampling frequency
-    so that a 2.0-second half-open window [0.5, 2.5) s at 160 Hz contains exactly
-    320 time samples, excluding T0 rest annotations and mapping T1 -> 0, T2 -> 1.
-
-    Args:
-        raw_filtered: Independently band-pass filtered MNE Raw instance.
-        subject_id: Integer subject identifier (e.g., 1).
-        run_id: Integer recording run identifier (e.g., 4, 8, or 12).
-        tmin_sec: Post-cue window start in seconds (default 0.5).
-        tmax_sec: Post-cue window stop (exclusive) in seconds (default 2.5).
-        expected_n_times: Expected sample count per epoch (default 320 at 160 Hz).
-        label_mapping: Mapping from annotation string to class label {'T1': 0, 'T2': 1}.
-        excluded_annotations: Annotations to skip (default ('T0',)).
-        filter_params: Metadata describing the applied band-pass filter.
-
-    Returns:
-        RunEpochsResult containing (n_trials, n_channels, n_times) array X in Volts,
-        labels y in {0, 1}, run group IDs, and trial-level provenance metadata.
-    """
+    """Extract fixed [tmin_sec, tmax_sec) post-cue motor-imagery epochs from a single run."""
     if label_mapping is None:
         label_mapping = {"T1": 0, "T2": 1}
     if label_mapping.get("T1") != 0 or label_mapping.get("T2") != 1:
@@ -150,7 +159,20 @@ def extract_epochs_from_filtered_run(
     metadata_list: list[TrialMetadata] = []
 
     trial_idx = 0
-    for onset_sec, desc_raw in zip(raw_filtered.annotations.onset, raw_filtered.annotations.description):
+    prev_onset_sec = -1.0
+    rec_id = format_recording_id(subject_id, run_id)
+
+    for onset_sec, desc_raw in zip(
+        raw_filtered.annotations.onset, raw_filtered.annotations.description
+    ):
+        onset_float = float(onset_sec)
+        if onset_float < prev_onset_sec - 1e-9:
+            raise ValueError(
+                f"Non-chronological annotation order in {rec_id}: "
+                f"onset {onset_float} < previous {prev_onset_sec}."
+            )
+        prev_onset_sec = onset_float
+
         desc = str(desc_raw).strip()
         if desc in excluded_annotations:
             continue
@@ -160,13 +182,13 @@ def extract_epochs_from_filtered_run(
                 f"Allowed: {list(label_mapping.keys())}, excluded: {list(excluded_annotations)}."
             )
 
-        onset_sample = raw_filtered.time_as_index(float(onset_sec))[0]
+        onset_sample = int(raw_filtered.time_as_index(onset_float)[0])
         start_sample = int(onset_sample + offset_start)
         stop_sample = int(onset_sample + offset_stop)
 
         if start_sample < 0 or stop_sample > total_samples:
             raise ValueError(
-                f"Epoch [{start_sample}, {stop_sample}) out of bounds for run {run_id} "
+                f"Epoch [{start_sample}, {stop_sample}) out of bounds for {rec_id} "
                 f"with {total_samples} total samples."
             )
 
@@ -176,21 +198,25 @@ def extract_epochs_from_filtered_run(
                 f"Epoch shape mismatch: got {epoch_slice.shape}, "
                 f"expected {(n_channels, expected_n_times)}."
             )
+        if not np.all(np.isfinite(epoch_slice)):
+            raise ValueError(f"Non-finite values in epoch {trial_idx} of {rec_id}.")
 
         numeric_label = int(label_mapping[desc])
         epochs_list.append(epoch_slice)
         labels_list.append(numeric_label)
         metadata_list.append(
             TrialMetadata(
-                subject_id=subject_id,
-                run_id=run_id,
+                subject_id=int(subject_id),
+                run_id=int(run_id),
                 trial_index_in_run=trial_idx,
                 annotation_label=desc,
                 numeric_label=numeric_label,
-                onset_sec=float(onset_sec),
-                onset_sample=int(onset_sample),
+                onset_sec=onset_float,
+                onset_sample=onset_sample,
                 epoch_start_sample=start_sample,
                 epoch_stop_sample=stop_sample,
+                recording_id=rec_id,
+                global_trial_id=format_global_trial_id(subject_id, run_id, trial_idx),
             )
         )
         trial_idx += 1
@@ -201,11 +227,14 @@ def extract_epochs_from_filtered_run(
     X_run = np.stack(epochs_list, axis=0)
     y_run = np.asarray(labels_list, dtype=np.int64)
     groups_run = np.full(shape=(len(labels_list),), fill_value=int(run_id), dtype=np.int64)
+    subject_ids_run = np.full(
+        shape=(len(labels_list),), fill_value=int(subject_id), dtype=np.int64
+    )
     times_sec = np.arange(offset_start, offset_stop, dtype=np.float64) / sfreq
 
     return RunEpochsResult(
-        subject_id=subject_id,
-        run_id=run_id,
+        subject_id=int(subject_id),
+        run_id=int(run_id),
         X=X_run,
         y=y_run,
         groups=groups_run,
@@ -223,4 +252,6 @@ def extract_epochs_from_filtered_run(
             "fir_design": "firwin",
             "phase": "zero (offline non-causal)",
         },
+        recording_id=rec_id,
+        subject_ids=subject_ids_run,
     )
