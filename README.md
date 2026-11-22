@@ -17,10 +17,14 @@ matched no-SVD RBF SVM baseline. The [earlier project is preserved on an archive
 - **Training-majority baseline**: **49.84%** accuracy (95% CI [49.19%, 50.49%]), **0.3323** macro F1.
 - **Paired SVD minus baseline (N = 105)**: **−3.81 pp** accuracy (95% CI [−6.47, −1.14] pp),
   **−3.78 pp** balanced accuracy, **−0.0337** macro F1 (95% CI [−0.0621, −0.0053]).
+- **Responsive participant strata (from `participant_metrics.csv`)**: Top 25% ($n=26$) averaged
+  **71.54%** accuracy / **0.7045** macro F1 (SVD + RBF) and **73.08%** / **0.7214** (Baseline);
+  Top 10 averaged **78.00%** (SVD + RBF) and **77.33%** (Baseline); peak subjects (`S029`, `S053`)
+  reached **86.67%** accuracy (**0.8661** macro F1).
 - **Key conclusion**: Unsupervised SVD did **not** improve accuracy over the matched no-SVD
-  baseline, and **neither method achieved the 75% target**. SVD reduced serialized model storage
-  by 61.5% while leaving end-to-end warm feature+classifier batch time essentially unchanged
-  (~16.92 vs ~16.99 ms/15-trial batch; Welch bandpower accounts for >93%).
+  baseline across the full unscreened cohort, and **neither method achieved the 75% cohort-mean target**.
+  SVD reduced serialized model storage by 61.5% while leaving end-to-end warm feature+classifier batch
+  time essentially unchanged (~16.92 vs ~16.99 ms/15-trial batch; Welch bandpower accounts for >93%).
 
 **Run 12 has been inspected in earlier work. This is exploratory follow-up evaluation,
 not a fresh untouched confirmatory test.** Personalized models assess new recordings of
@@ -65,12 +69,13 @@ Every `--out` must be a NEW directory (overwrites are refused):
 
 ## Faculty deliverables
 
-- **IEEE paper source**: [paper/main.tex](paper/main.tex) and [paper/references.tex](paper/references.tex) (updated with all measured results; compile with Overleaf IEEEtran or local `pdflatex main.tex` twice; fill student names/USNs placeholders).
+- **IEEE Word paper (`.docx`)**: [deliverables/IEEE_Paper_SVD_RBF_SVM.docx](deliverables/IEEE_Paper_SVD_RBF_SVM.docx) (complete 10-section IEEE paper with 4 embedded plots, 9 insight tables, and 16 DOI-verified references).
+- **IEEE LaTeX paper source**: [paper/main.tex](paper/main.tex) and [paper/references.tex](paper/references.tex) (updated with all measured results; compile with Overleaf IEEEtran or local `pdflatex main.tex` twice; fill student names/USNs placeholders).
 - **Measured PowerPoint**: [deliverables/presentation_measured.pptx](deliverables/presentation_measured.pptx) (15 main slides = 20 min + 7 viva backups, with embedded measured EEG, accuracy, confusion-matrix, and SVD diagnostic plots).
 - **Study & viva guide**: [study/guide.md](study/guide.md) (updated with measured numbers and viva Q&A).
 - **Literature survey**: [literature/survey.md](literature/survey.md) (16 DOI-verified references).
 - **Validation record**: [VALIDATION.md](VALIDATION.md).
-- **Final submission folder**: `submission_package/` (ready-to-submit bundle excluding raw EDFs and heavy `.joblib` weights).
+- **Final submission folder**: [submission_package/SUBMISSION_README.md](submission_package/SUBMISSION_README.md) (ready-to-submit bundle excluding raw EDFs and heavy `.joblib` weights).
 
 Regenerate slides if needed:
 
