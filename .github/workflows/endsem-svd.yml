@@ -1,9 +1,10 @@
 name: End-semester SVD project
 on:
   push:
-    paths: ['endsem_svd/**', '.github/workflows/endsem-svd.yml']
+    branches: [main]
+    paths: ['src/**', 'tests/**', 'scripts/**', 'pyproject.toml', 'configs/**', '.github/workflows/endsem-svd.yml']
   pull_request:
-    paths: ['endsem_svd/**', '.github/workflows/endsem-svd.yml']
+    paths: ['src/**', 'tests/**', 'scripts/**', 'pyproject.toml', 'configs/**', '.github/workflows/endsem-svd.yml']
 permissions:
   contents: read
 jobs:
@@ -12,12 +13,9 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.11', '3.12']
-    defaults:
-      run:
-        working-directory: endsem_svd
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - run: python -m pip install -e '.[dev]'

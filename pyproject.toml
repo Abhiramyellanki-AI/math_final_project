@@ -1,48 +1,31 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "eeg-p3"
+name = "eeg-endsem-svd"
 version = "0.1.0"
-description = "P3 EEG Motor-Imagery Classification: HOSVD + SVM vs RKS + Linear SVM with Intra-Trial Markov Chains"
-readme = "README.md"
-requires-python = ">=3.10"
-license = { text = "MIT" }
-authors = [
-    { name = "Abhiram" }
-]
-dependencies = [
-    "numpy>=1.24.0",
-    "scipy>=1.10.0",
-    "scikit-learn>=1.3.0",
-    "pandas>=2.0.0",
-    "matplotlib>=3.7.0",
-    "PyYAML>=6.0",
-    "mne>=1.6.0",
-]
+description = "Recording-separated personalized EEG classification with SVD and RBF SVM"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26", "scipy>=1.12", "scikit-learn>=1.4", "mne>=1.8", "pandas>=2.1", "matplotlib>=3.8", "PyYAML>=6", "joblib>=1.3"]
 
 [project.optional-dependencies]
-dev = [
-    "pytest>=7.4.0",
-    "ruff>=0.3.0",
-]
+dev = ["pytest>=8", "ruff>=0.8"]
+slides = ["python-pptx>=1.0"]
 
 [project.scripts]
-eeg-p3 = "eeg_p3.cli:main"
+eeg-svd = "eeg_svd.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.pytest.ini_options]
-minversion = "7.0"
-addopts = "-ra -q"
 testpaths = ["tests"]
 pythonpath = ["src"]
+addopts = "-ra"
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "W"]
+select = ["E4", "E7", "E9", "F"]

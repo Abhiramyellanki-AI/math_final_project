@@ -1,43 +1,22 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Virtual environments
 .venv/
-venv/
-ENV/
-env/
-
-# Packaging and build artifacts
-build/
-dist/
-*.egg-info/
-.eggs/
-
-# Test and linter caches
+__pycache__/
 .pytest_cache/
 .ruff_cache/
-.mypy_cache/
-.coverage
-htmlcov/
-
-# Large EEG data, caches, and generated experiment outputs (Rule 6)
-data/
+*.egg-info/
+build/
 outputs/
-cache/
 *.edf
 *.edf.event
-*.fif
+*.joblib
 *.npy
 *.npz
-*.pkl
-*.joblib
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.pdf
+slides/*.pptx
+slides/*.pdf
 
-# Jupyter Notebook checkpoints
-.ipynb_checkpoints/
-
-# Secrets and local environment overrides
 .env
 .env.*
 *.key
