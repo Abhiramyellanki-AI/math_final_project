@@ -37,10 +37,12 @@ def check_config(cfg: dict) -> dict:
         raise ValueError("Invalid PSD settings")
     if not cfg["ranks"] or any(type(r) is not int or not 1 <= r <= 128 for r in cfg["ranks"]):
         raise ValueError("Ranks must be integers in 1..128")
-    if not cfg["c_values"] or any(not np.isfinite(c) or c <= 0 for c in cfg["c_values"]):
+    if not cfg["c_values"] or any(isinstance(c, bool) or not isinstance(c, (int, float))
+                                  or not np.isfinite(c) or c <= 0 for c in cfg["c_values"]):
         raise ValueError("C values must be positive and finite")
     if not cfg["gammas"] or any(g != "scale" and
-                                (not isinstance(g, (float, int)) or not np.isfinite(g) or g <= 0)
+                                (isinstance(g, bool) or not isinstance(g, (float, int))
+                                 or not np.isfinite(g) or g <= 0)
                                 for g in cfg["gammas"]):
         raise ValueError("Gamma must be scale or a positive finite number")
     if type(cfg["timing_repeats"]) is not int or cfg["timing_repeats"] < 2:

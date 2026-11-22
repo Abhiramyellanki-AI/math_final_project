@@ -1,0 +1,898 @@
+[
+  {
+    "doi": "10.1109/TBME.2004.827072",
+    "title": "BCI2000: A General-Purpose Brain-Computer Interface (BCI) System",
+    "authors": [
+      {
+        "given": "G.",
+        "family": "Schalk",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "D.J.",
+        "family": "McFarland",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "T.",
+        "family": "Hinterberger",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "N.",
+        "family": "Birbaumer",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "J.R.",
+        "family": "Wolpaw",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "venue": [
+      "IEEE Transactions on Biomedical Engineering"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2004,
+          6
+        ]
+      ]
+    },
+    "source": "https://api.crossref.org/works/10.1109/TBME.2004.827072",
+    "verified": "2026-11-22"
+  },
+  {
+    "doi": "10.3389/fnins.2013.00267",
+    "title": "MEG and EEG data analysis with MNE-Python",
+    "authors": [
+      {
+        "given": "Alexandre",
+        "family": "Gramfort",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "venue": [
+      "Frontiers in Neuroscience"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2013
+        ]
+      ]
+    },
+    "source": "https://api.crossref.org/works/10.3389/fnins.2013.00267",
+    "verified": "2026-11-22"
+  },
+  {
+    "doi": "10.1016/S1388-2457(99)00141-8",
+    "title": "Event-related EEG/MEG synchronization and desynchronization: basic principles",
+    "authors": [
+      {
+        "given": "G.",
+        "family": "Pfurtscheller",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "F.H.",
+        "family": "Lopes da Silva",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "venue": [
+      "Clinical Neurophysiology"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          1999,
+          11
+        ]
+      ]
+    },
+    "source": "https://api.crossref.org/works/10.1016/S1388-2457(99)00141-8",
+    "verified": "2026-11-22"
+  },
+  {
+    "doi": "10.1109/86.895946",
+    "title": "Optimal spatial filtering of single trial EEG during imagined hand movement",
+    "authors": [
+      {
+        "given": "H.",
+        "family": "Ramoser",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "J.",
+        "family": "Muller-Gerking",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "G.",
+        "family": "Pfurtscheller",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "venue": [
+      "IEEE Transactions on Rehabilitation Engineering"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2000,
+          12
+        ]
+      ]
+    },
+    "source": "https://api.crossref.org/works/10.1109/86.895946",
+    "verified": "2026-11-22"
+  },
+  {
+    "doi": "10.1109/MSP.2008.4408441",
+    "title": "Optimizing Spatial filters for Robust EEG Single-Trial Analysis",
+    "authors": [
+      {
+        "given": "Benjamin",
+        "family": "Blankertz",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Ryota",
+        "family": "Tomioka",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Steven",
+        "family": "Lemm",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Motoaki",
+        "family": "Kawanabe",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Klaus-robert",
+        "family": "Muller",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "venue": [
+      "IEEE Signal Processing Magazine"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2008
+        ]
+      ]
+    },
+    "source": "https://api.crossref.org/works/10.1109/MSP.2008.4408441",
+    "verified": "2026-11-22"
+  },
+  {
+    "doi": "10.3389/fnins.2012.00039",
+    "title": "Filter Bank Common Spatial Pattern Algorithm on BCI Competition IV Datasets 2a and 2b",
+    "authors": [
+      {
+        "given": "Kai Keng",
+        "family": "Ang",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Zheng Yang",
+        "family": "Chin",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Chuanchu",
+        "family": "Wang",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Cuntai",
+        "family": "Guan",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Haihong",
+        "family": "Zhang",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "venue": [
+      "Frontiers in Neuroscience"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2012
+        ]
+      ]
+    },
+    "source": "https://api.crossref.org/works/10.3389/fnins.2012.00039",
+    "verified": "2026-11-22"
+  },
+  {
+    "doi": "10.1007/BF00994018",
+    "title": "Support-vector networks",
+    "authors": [
+      {
+        "given": "Corinna",
+        "family": "Cortes",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Vladimir",
+        "family": "Vapnik",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "venue": [
+      "Machine Learning"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          1995,
+          9
+        ]
+      ]
+    },
+    "source": "https://api.crossref.org/works/10.1007/BF00994018",
+    "verified": "2026-11-22"
+  },
+  {
+    "doi": "10.1023/A:1009715923555",
+    "title": "A Tutorial on Support Vector Machines for Pattern Recognition",
+    "authors": [
+      {
+        "given": "Christopher J.C.",
+        "family": "Burges",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "venue": [
+      "Data Mining and Knowledge Discovery"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          1998,
+          6
+        ]
+      ]
+    },
+    "source": "https://api.crossref.org/works/10.1023/A:1009715923555",
+    "verified": "2026-11-22"
+  },
+  {
+    "doi": "10.1162/089976698300017467",
+    "title": "Nonlinear Component Analysis as a Kernel Eigenvalue Problem",
+    "authors": [
+      {
+        "given": "Bernhard",
+        "family": "Sch\u00f6lkopf",
+        "sequence": "first",
+        "affiliation": [
+          {
+            "name": "Max-Planck-Institut f\u00fcr biologische Kybernetik, 72076 T\u00fcbingen, Germany"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Alexander",
+        "family": "Smola",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "GMD First (Forschungszentrum Informationstechnik), 12489 Berlin, Germany"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Klaus-Robert",
+        "family": "M\u00fcller",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "GMD First (Forschungszentrum Informationstechnik), 12489 Berlin, Germany"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "venue": [
+      "Neural Computation"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          1998,
+          7,
+          1
+        ]
+      ]
+    },
+    "source": "https://api.crossref.org/works/10.1162/089976698300017467",
+    "verified": "2026-11-22"
+  },
+  {
+    "doi": "10.1098/rsta.2015.0202",
+    "title": "Principal component analysis: a review and recent developments",
+    "authors": [
+      {
+        "given": "Ian T.",
+        "family": "Jolliffe",
+        "sequence": "first",
+        "affiliation": [
+          {
+            "name": "College of Engineering, Mathematics and Physical Sciences, University of Exeter, Exeter, UK"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Jorge",
+        "family": "Cadima",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "Sec\u00e7\u00e3o de Matem\u00e1tica (DCEB), Instituto Superior de Agronomia, Universidade de Lisboa, Tapada da Ajuda, Lisboa 1340-017, Portugal"
+          },
+          {
+            "name": "Centro de Estat\u00edstica e Aplica\u00e7\u00f5es da Universidade de Lisboa (CEAUL), Lisboa, Portugal"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "venue": [
+      "Philosophical Transactions of the Royal Society A: Mathematical, Physical and Engineering Sciences"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2016,
+          4,
+          13
+        ]
+      ]
+    },
+    "source": "https://api.crossref.org/works/10.1098/rsta.2015.0202",
+    "verified": "2026-11-22"
+  },
+  {
+    "doi": "10.1007/BF02288367",
+    "title": "The Approximation of One Matrix by Another of Lower Rank",
+    "authors": [
+      {
+        "given": "Carl",
+        "family": "Eckart",
+        "sequence": "first",
+        "affiliation": [
+          {
+            "name": "University of Chicago"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Gale",
+        "family": "Young",
+        "sequence": "additional",
+        "affiliation": [
+          {
+            "name": "University of Chicago"
+          }
+        ],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "venue": [
+      "Psychometrika"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          1936,
+          9
+        ]
+      ]
+    },
+    "source": "https://api.crossref.org/works/10.1007/BF02288367",
+    "verified": "2026-11-22"
+  },
+  {
+    "doi": "10.1007/BF02163027",
+    "title": "Singular value decomposition and least squares solutions",
+    "authors": [
+      {
+        "given": "G. H.",
+        "family": "Golub",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "C.",
+        "family": "Reinsch",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "venue": [
+      "Numerische Mathematik"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          1970,
+          4
+        ]
+      ]
+    },
+    "source": "https://api.crossref.org/works/10.1007/BF02163027",
+    "verified": "2026-11-22"
+  },
+  {
+    "doi": "10.1109/TAU.1967.1161901",
+    "title": "The use of fast Fourier transform for the estimation of power spectra: A method based on time averaging over short, modified periodograms",
+    "authors": [
+      {
+        "given": "P.",
+        "family": "Welch",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "venue": [
+      "IEEE Transactions on Audio and Electroacoustics"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          1967,
+          6
+        ]
+      ]
+    },
+    "source": "https://api.crossref.org/works/10.1109/TAU.1967.1161901",
+    "verified": "2026-11-22"
+  },
+  {
+    "doi": "10.1016/j.eswa.2018.08.031",
+    "title": "An end-to-end deep learning approach to MI-EEG signal classification for BCIs",
+    "authors": [
+      {
+        "given": "Hauke",
+        "family": "Dose",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "ORCID": "https://orcid.org/0000-0001-5234-5439",
+        "authenticated-orcid": false,
+        "given": "Jakob S.",
+        "family": "M\u00f8ller",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Helle K.",
+        "family": "Iversen",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "ORCID": "https://orcid.org/0000-0001-7564-2612",
+        "authenticated-orcid": false,
+        "given": "Sadasivan",
+        "family": "Puthusserypady",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "venue": [
+      "Expert Systems with Applications"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2018,
+          12
+        ]
+      ]
+    },
+    "source": "https://api.crossref.org/works/10.1016/j.eswa.2018.08.031",
+    "verified": "2026-11-22"
+  },
+  {
+    "doi": "10.1088/1741-2552/aace8c",
+    "title": "EEGNet: a compact convolutional neural network for EEG-based brain\u2013computer interfaces",
+    "authors": [
+      {
+        "ORCID": "https://orcid.org/0000-0002-3921-8723",
+        "authenticated-orcid": false,
+        "given": "Vernon J",
+        "family": "Lawhern",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Amelia J",
+        "family": "Solon",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Nicholas R",
+        "family": "Waytowich",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Stephen M",
+        "family": "Gordon",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Chou P",
+        "family": "Hung",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Brent J",
+        "family": "Lance",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "venue": [
+      "Journal of Neural Engineering"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2018,
+          7,
+          27
+        ]
+      ]
+    },
+    "source": "https://api.crossref.org/works/10.1088/1741-2552/aace8c",
+    "verified": "2026-11-22"
+  },
+  {
+    "doi": "10.1088/1741-2552/aadea0",
+    "title": "MOABB: trustworthy algorithm benchmarking for BCIs",
+    "authors": [
+      {
+        "ORCID": "https://orcid.org/0000-0002-8581-4921",
+        "authenticated-orcid": false,
+        "given": "Vinay",
+        "family": "Jayaram",
+        "sequence": "first",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      },
+      {
+        "given": "Alexandre",
+        "family": "Barachant",
+        "sequence": "additional",
+        "affiliation": [],
+        "role": [
+          {
+            "vocabulary": "crossref",
+            "role": "author"
+          }
+        ]
+      }
+    ],
+    "venue": [
+      "Journal of Neural Engineering"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2018,
+          9,
+          25
+        ]
+      ]
+    },
+    "source": "https://api.crossref.org/works/10.1088/1741-2552/aadea0",
+    "verified": "2026-11-22"
+  }
+]

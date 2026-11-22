@@ -25,7 +25,8 @@ def cfg():
 
 
 @pytest.mark.parametrize('field,value', [('prior_test_exposure', False), ('sfreq', 128),
-    ('ranks', [0]), ('gammas', [-1]), ('c_values', [float('nan')])])
+    ('ranks', [0]), ('gammas', [-1]), ('gammas', [True]), ('c_values', [float('nan')]),
+    ('c_values', [True])])
 def test_invalid_configuration(cfg, field, value):
     with pytest.raises(ValueError):
         check_config({**cfg, field: value})

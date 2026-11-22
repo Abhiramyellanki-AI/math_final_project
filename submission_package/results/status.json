@@ -1,0 +1,8 @@
+{
+  "sha256": {
+    "participant_metrics.csv": "5a6f08a47248e04dc37aa26f7433025f397afdb737cae9d48afcdd9437999bea",
+    "predictions.csv": "87ca427c07c14589550dac7ac9142d7f855b369b97e88b073e7cf6e3e4d14b11",
+    "results.json": "bbbf85fcd487c49da08d18e34cfacdc986e657006627db8b93646ea1aebd40e4"
+  },
+  "status": "complete"
+}

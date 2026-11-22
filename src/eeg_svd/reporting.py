@@ -78,7 +78,7 @@ def build_report(experiment: Path, out: Path) -> None:
     (out / "measured_summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     table = ("\\begin{table}[ht]\n\\centering\n"
              "\\caption{Measured exploratory follow-up; participant-averaged metrics.}\n"
-             "\\begin{tabular}{lrr}\\hline Method & Accuracy (\\%) & Macro F1 \\\\\n"
+             "\\begin{tabular}{lrr}\\hline Method & Accuracy (\\%) & Macro F1 \\\\ \\hline\n"
              + "\n".join(latex) + "\n\\hline\\end{tabular}\n\\end{table}\n")
     (out / "results.tex").write_text(table, encoding="utf-8")
 
