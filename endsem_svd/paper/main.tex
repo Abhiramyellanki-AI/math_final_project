@@ -1,0 +1,165 @@
+\documentclass[conference]{IEEEtran}
+\usepackage{amsmath,amssymb,graphicx,url}
+\title{Rank-Controlled SVD Features for EEG Motor-Imagery Classification Using RBF SVM}
+\author{\IEEEauthorblockN{[Student names and USNs]}
+\IEEEauthorblockA{[Department and institution]\\Faculty: Dr Geetha KN\\{[Academic year]}}}
+\begin{document}
+\maketitle
+\begin{abstract}
+\textbf{Methodological draft: new experimental results are pending.}
+This project investigates whether low-rank singular value decomposition (SVD) of
+EEG spectral features offers a useful classification--resource trade-off for
+left-versus-right hand motor imagery. Fixed mu/beta log-bandpower features are
+standardized and projected using training observations only. An RBF support vector
+machine (SVM) performs classification. A matched RBF SVM without SVD isolates the
+projection's effect. Personalized models use recording-separated development
+validation and a disclosed exploratory follow-up evaluation. Classification,
+reconstruction, uncertainty, runtime and storage are assessed together. No accuracy
+or superiority is claimed before executing the new experiment. Replace this draft
+abstract with the measured cohort, findings and supported conclusion after execution.
+\end{abstract}
+\begin{IEEEkeywords}
+EEG, motor imagery, singular value decomposition, support vector machine, RBF kernel
+\end{IEEEkeywords}
+
+\section{Introduction}
+Motor imagery can modulate sensorimotor EEG rhythms without overt movement.
+Event-related synchronization and desynchronization motivate spectral features,
+but EEG is noisy and individual patterns vary\cite{ref3}. PhysioNet's EEG Motor
+Movement/Imagery dataset contains recordings acquired using BCI2000\cite{ref1}.
+The task is binary prediction of imagined left versus right fist movement.
+
+The project-specific question is whether low-rank spectral representation offers
+a useful accuracy--resource trade-off with training and evaluation recordings kept
+separate. This is an experimental question, not a claim that SVD--SVM is unprecedented.
+Contributions are an independent rank-controlled pipeline, a matched no-SVD ablation,
+auditable provenance, and participant-level statistical and computational evaluation.
+
+\section{Mathematical Background}
+\subsection{Spectral representation}
+A trial is $X_i\in\mathbb{R}^{64\times320}$. Welch averaging estimates power spectral
+density $\widehat S_{ic}(f)$\cite{ref13}. For mu and beta bands $B_b$, define
+\begin{equation}
+F_{i,(b,c)}=\log_{10}\left(\max\left\{\int_{B_b}\widehat S_{ic}(f)df,\epsilon\right\}\right).
+\end{equation}
+This gives 128 features. Training statistics produce
+$A_{ij}=(F_{ij}-\mu_j)/s_j$; validation and test use those same fitted values.
+\subsection{SVD}
+For standardized training features,
+\begin{equation}
+A=U\Sigma V^T,\quad Z=AV_r,\quad \widehat A=AV_rV_r^T.
+\end{equation}
+$V_r$ contains the leading right singular vectors. An unseen row $a$ maps to
+$aV_r$, not to a training-row factor from $U$. SVD/PCA and numerical decomposition
+are established methods\cite{ref10,ref11,ref12}.
+\subsection{Kernel SVM}
+With mathematical labels $y_i\in\{-1,+1\}$, soft-margin SVM solves\cite{ref7,ref8}
+\begin{equation}
+\min_{w,b,\xi\geq0}\tfrac12\|w\|^2+C\sum_i\xi_i,
+\quad y_i(w^T\phi(z_i)+b)\geq1-\xi_i.
+\end{equation}
+The kernel is $K(z,z')=\exp(-\gamma\|z-z'\|^2)$. The decision is the sign of
+$\sum_i\alpha_i y_iK(z_i,z)+b$. Nonzero coefficients identify support vectors.
+$C$ controls the error penalty and $\gamma$ the similarity scale.
+
+\section{Existing Methods}
+Spatial filtering and common spatial patterns are established EEG methods\cite{ref4,ref5};
+filter-bank CSP introduces multiple frequency bands\cite{ref6}. Kernel PCA is a
+nonlinear projection distinct from this project's linear SVD\cite{ref9}.
+CNN approaches and EEGNet provide related learned representations but are outside
+the implemented scope\cite{ref14,ref15}. MNE supports signal processing\cite{ref2};
+MOABB motivates standardized BCI evaluation\cite{ref16}. The accompanying survey
+covers 16 DOI-verified references and separates theory from direct EEG studies.
+A universal novelty claim would require a broader systematic review.
+
+\section{Proposed Method}
+\begin{enumerate}
+\item Audit candidate EDF files using prespecified mechanical quality checks.
+\item Filter each run independently, epoch, and compute fixed log-bandpower.
+\item Within each development fold, fit a new scaler, SVD and RBF SVM.
+\item Select rank, $C$ and $\gamma$ from recording-swapped validation.
+\item Save selections and data hashes; refit on combined development recordings.
+\item Explicitly evaluate the follow-up recording for every eligible participant.
+\end{enumerate}
+The no-SVD baseline uses the same input features, normalization, SVM search and
+recordings. A training-majority predictor provides a trivial reference.
+
+\section{Mathematical Analysis}
+Truncated SVD minimizes rank-$r$ Frobenius approximation error\cite{ref11}:
+\begin{equation}
+E_r=\frac{\|A-\widehat A\|_F}{\|A\|_F}
+=\sqrt{\frac{\sum_{j>r}\sigma_j^2}{\sum_j\sigma_j^2}}.
+\end{equation}
+Retained energy is $1-E_r^2$. This concerns reconstruction, not classification.
+Centered numerical rank is at most $\min(N-1,128)$. Projection requires
+$O(128r)$ work per trial and stores $128r$ basis values. RBF prediction scales
+approximately with $O(n_{SV}r)$ instead of $O(n_{SV}128)$, but support-vector counts
+and other costs may change. No universal training-time or speedup claim follows.
+Storage must include scaler, basis and SVM state, summed across personalized models.
+
+\section{Experimental Design}
+Candidates are subjects 2--109; Subject 1 is a previously explored pilot.
+Eligibility requires runs 4/8/12, 64 consistent EEG channels, 160 Hz, valid labels,
+both classes and finite in-bounds epochs. For these runs T1 means left-fist imagery,
+T2 right-fist imagery and T0 rest. Counts must come from the new audit.
+
+Independent zero-phase FIR filtering retains 8--30 Hz. Epochs cover $[0.5,2.5)$
+seconds after the cue. Welch parameters are 160-sample Hann windows, 80-sample
+overlap, constant detrending and density scaling. The bands are [8,13] and [13,30]
+Hz; the power floor is $10^{-20}$ V$^2$. Values use double precision.
+
+Each participant's folds are run 4 to run 8 and the reverse. Ranks
+$\{2,4,6,8,10,12\}$ are restricted by training-fold rank; $C\in\{0.1,1,10,100\}$
+and $\gamma\in\{\text{scale},0.001,0.01,0.1\}$. Selection prioritizes mean macro
+F1, balanced accuracy, smaller rank, smaller $C$, and configured gamma order.
+Refitting uses both development runs.
+
+\textbf{Prior exposure:} run 12 results were inspected in earlier work. This is
+exploratory follow-up evidence, not a fresh untouched confirmatory test. Settings
+are not revised in response to test scores. A saved attempt marker prevents
+accidental repeats but does not prove absence of historical exposure.
+
+Report participant and pooled classification, participant t intervals, paired
+differences, reconstruction, dimensions, repeated warm timings and storage. Hardware
+and software come from runtime metadata. Feature-plus-classifier timings exclude
+fixed loading/filtering; amortized batch time is not measured single-trial latency.
+
+\section{Results}
+\IfFileExists{../outputs/report/results.tex}{
+\input{../outputs/report/results.tex}
+\textbf{Interpretation pending author review.} Insert measured eligibility and
+class counts, uncertainty, reconstruction, timing and storage evidence.
+}{
+\textbf{Pending local EDF execution.} No new classification results are bundled.
+Synthetic test scores are not experimental evidence. This is not yet a completed
+empirical results section.
+}
+\IfFileExists{../outputs/report/accuracy.png}{
+\begin{figure}[ht]\centering
+\includegraphics[width=\columnwidth]{../outputs/report/accuracy.png}
+\caption{Measured exploratory participant accuracy.}\end{figure}}{}
+
+\section{Comparison}
+Compare SVD and no SVD with identical inputs and splits, using paired participant
+differences and uncertainty. Similar scores or overlapping intervals do not prove
+equivalence. Use feature-plus-classifier timing for total inference comparisons,
+and report both per-model and aggregate serialized storage. Populate this section
+from actual results; SVD superiority is not assumed.
+
+\section{Limitations}
+Few trials make participant-specific selection unstable; only two recording folds
+are available. Prior test exposure limits confirmatory claims. Personalization does
+not establish unseen-participant generalization. Cue artifacts and nonstationarity
+may persist. Variance-based compression may discard discriminative information.
+Fixed bands/epochs need not be optimal. Non-causal filtering excludes real-time
+claims. Parameter-array bytes are not process RAM. A single dataset limits external
+validity, and the literature survey is not an exhaustive novelty review.
+
+\section{Conclusion}
+The implementation supports an auditable comparison of SVD-compressed spectral
+features and a matched RBF SVM baseline. The scientific conclusion must follow the
+new measured evidence. A 75\% aspiration is not a result. Replace this paragraph
+with observed effects, uncertainty and limitations, including negative findings.
+
+\input{references.tex}
+\end{document}

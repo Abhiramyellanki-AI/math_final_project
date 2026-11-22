@@ -1,0 +1,17 @@
+data_dir: 'C:/Users/Abhiram/Downloads/eegmmidb-1.0.0/files'
+subject_start: 2
+subject_stop: 109
+excluded_subjects: [1]
+sfreq: 160.0
+channels: 64
+bandpass: [8.0, 30.0]
+epoch: [0.5, 2.5]
+bands: [[8.0, 13.0], [13.0, 30.0]]
+welch_nperseg: 160
+power_floor: 1.0e-20
+ranks: [2, 4, 6, 8, 10, 12]
+c_values: [0.1, 1.0, 10.0, 100.0]
+gammas: [scale, 0.001, 0.01, 0.1]
+timing_repeats: 5
+seed: 42
+prior_test_exposure: true

@@ -1,3 +1,5 @@
+> **New standalone end-semester project:** [SVD + RBF Kernel SVM](endsem_svd/README.md). Start there for the new code, Windows commands, tests, paper draft, slides and study guide. The legacy project below is preserved. New cohort results are pending local execution.
+
 # P3 EEG Motor-Imagery Classification
 
 **HOSVD + SVM vs. Random Kitchen Sinks (RKS) + Linear SVM with Intra-Trial Observable Markov Chains**

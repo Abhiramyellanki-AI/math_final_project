@@ -1,0 +1,44 @@
+{
+  "cpu_count": 3,
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "processor": "not reported by OS",
+  "python": "3.12.14",
+  "threadpools": [
+    {
+      "architecture": "SkylakeX",
+      "filepath": "/workspace/p3-eeg-project/.venv/lib/python3.12/site-packages/scipy.libs/libscipy_openblas-5f890258.so",
+      "internal_api": "openblas",
+      "num_threads": 3,
+      "prefix": "libscipy_openblas",
+      "threading_layer": "pthreads",
+      "user_api": "blas",
+      "version": "0.3.31.dev"
+    },
+    {
+      "filepath": "/workspace/p3-eeg-project/.venv/lib/python3.12/site-packages/scikit_learn.libs/libgomp-e985bcbb.so.1.0.0",
+      "internal_api": "openmp",
+      "num_threads": 3,
+      "prefix": "libgomp",
+      "user_api": "openmp",
+      "version": null
+    },
+    {
+      "architecture": "SkylakeX",
+      "filepath": "/workspace/p3-eeg-project/.venv/lib/python3.12/site-packages/numpy.libs/libscipy_openblas64_-f48b354e.so",
+      "internal_api": "openblas",
+      "num_threads": 3,
+      "prefix": "libscipy_openblas",
+      "threading_layer": "pthreads",
+      "user_api": "blas",
+      "version": "0.3.34.106.0"
+    }
+  ],
+  "versions": {
+    "joblib": "1.6.0",
+    "mne": "1.13.2",
+    "numpy": "2.5.4",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.9.1",
+    "scipy": "1.18.1"
+  }
+}
